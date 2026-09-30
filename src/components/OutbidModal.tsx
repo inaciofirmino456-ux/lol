@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { X, Zap, Trophy, ShieldCheck, ArrowRight, CheckCircle2, Sparkles, CreditCard, Lock, Globe } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Category, Listing } from '../types';
+import { WalletPaymentButton } from './WalletPaymentButton';
 import { soundFX } from '../utils/audio';
 
 interface OutbidModalProps {
@@ -354,6 +355,8 @@ export const OutbidModal: React.FC<OutbidModalProps> = ({
                 <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
                 <span>Simulated instant checkout. Click below to claim position.</span>
               </div>
+
+              <WalletPaymentButton />
 
               <button
                 type="submit"
