@@ -253,7 +253,7 @@ export const Hero: React.FC<HeroProps> = ({
           <div className="text-sm font-bold text-[#e05638]">
             {totalListingsCount > 0
               ? `${format2(timeLeft.hours)}:${format2(timeLeft.minutes)}:${format2(timeLeft.seconds)}`
-              : 'Waiting for first bid'}
+              : '--:--:--'}
           </div>
         </div>
       </div>
