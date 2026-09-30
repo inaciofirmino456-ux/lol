@@ -229,7 +229,6 @@ export default function App() {
       {/* Header with stepped logo */}
       <Header
         onOpenRules={() => setIsRulesModalOpen(true)}
-        onOpenSubmit={handleOpenSubmit}
         onOpenDaily={() => setTimeframe('today')}
         onOpenCategories={() => document.getElementById('leaderboard-filter')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
       />
