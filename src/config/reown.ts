@@ -1,12 +1,12 @@
 import { createAppKit } from '@reown/appkit/react';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
-import { mainnet, base } from '@reown/appkit/networks';
+import { bsc, mainnet, base } from '@reown/appkit/networks';
 
 export const projectId =
   import.meta.env.VITE_REOWN_PROJECT_ID ||
   '52b71fb9a45b4c8184c75d946b0839d5';
 
-export const networks = [mainnet, base] as const;
+export const networks = [mainnet, base, bsc] as const;
 
 export const metadata = {
   name: 'TopBid',
