@@ -27,7 +27,7 @@ export const Header: React.FC<HeaderProps> = ({
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full bg-[#faf6f3]/90 backdrop-blur-md border-b border-[#ebdcd4]">
-      <div className="max-w-2xl mx-auto px-4 h-16 flex items-center justify-between gap-3">
+      <div className="max-w-6xl mx-auto px-3 sm:px-5 h-16 flex items-center justify-between gap-2 sm:gap-4">
         {/* Stepped Logo as in screenshot */}
         <div className="flex items-center gap-3">
           <a
@@ -51,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Navigation links matching screenshot */}
-        <div className="flex items-center gap-4 text-xs font-semibold text-[#57534e]">
+        <div className="flex items-center gap-2 sm:gap-4 text-xs font-semibold text-[#57534e] min-w-0 overflow-x-auto scrollbar-none whitespace-nowrap">
           {/* Online status stays visible; no fabricated visitor count. */}
           <div className="hidden sm:flex items-center gap-1.5 uppercase tracking-wider text-[10px] font-bold text-[#57534e]" title="Online">
             <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
@@ -111,7 +111,7 @@ export const Header: React.FC<HeaderProps> = ({
             title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
             aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            {darkMode ? <Sun className="w-4 h-4 text-[#e05638]" /> : <Moon className="w-4 h-4" />}
+            {darkMode ? <Sun className="w-4 h-4 text-[#e05638]" /> : <Moon className="w-4 h-4" />}<span className="hidden sm:inline">{darkMode ? 'Claro' : 'Escuro'}</span>
           </button>
         </div>
       </div>
