@@ -9,6 +9,9 @@ interface HeaderProps {
   onToggleSound: () => void;
   onOpenRules: () => void;
   onOpenSubmit: () => void;
+  onOpenDaily: () => void;
+  onOpenCategories: () => void;
+  onOpenSearch: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -18,6 +21,9 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSound,
   onOpenRules,
   onOpenSubmit,
+  onOpenDaily,
+  onOpenCategories,
+  onOpenSearch,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full bg-[#faf6f3]/90 backdrop-blur-md border-b border-[#ebdcd4]">
@@ -52,19 +58,19 @@ export const Header: React.FC<HeaderProps> = ({
             <span>Online</span>
           </div>
           <button
-            onClick={() => onOpenRules()}
+            onClick={onOpenDaily}
             className="hover:text-[#1c1917] transition-colors cursor-pointer"
           >
             Daily
           </button>
           <button
-            onClick={() => onOpenRules()}
+            onClick={onOpenCategories}
             className="hover:text-[#1c1917] transition-colors cursor-pointer"
           >
             Categories
           </button>
           <button
-            onClick={() => onOpenRules()}
+            onClick={onOpenRules}
             className="hover:text-[#1c1917] transition-colors cursor-pointer"
           >
             About
@@ -88,7 +94,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Search trigger */}
           <button
-            onClick={() => onOpenRules()}
+            onClick={onOpenSearch}
             className="p-1 text-[#78716c] hover:text-[#1c1917] transition-colors cursor-pointer"
             title="Search"
           >
@@ -99,12 +105,13 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={() => {
               soundFX.playClick();
-              onOpenRules();
+              onToggleTheme();
             }}
             className="p-1 text-[#78716c] hover:text-[#1c1917] transition-colors cursor-pointer"
-            title="Information & Rules"
+            title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-label={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
           >
-            <Moon className="w-4 h-4" />
+            {darkMode ? <Sun className="w-4 h-4 text-[#e05638]" /> : <Moon className="w-4 h-4" />}
           </button>
         </div>
       </div>
