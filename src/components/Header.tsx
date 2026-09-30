@@ -1,12 +1,10 @@
 import React from 'react';
-import { Search, Moon, Sun, Volume2, VolumeX, HelpCircle, Plus } from 'lucide-react';
+import { Search, Moon, Sun } from 'lucide-react';
 import { soundFX } from '../utils/audio';
 
 interface HeaderProps {
   darkMode: boolean;
   onToggleTheme: () => void;
-  soundEnabled: boolean;
-  onToggleSound: () => void;
   onOpenRules: () => void;
   onOpenSubmit: () => void;
   onOpenDaily: () => void;
@@ -17,8 +15,6 @@ interface HeaderProps {
 export const Header: React.FC<HeaderProps> = ({
   darkMode,
   onToggleTheme,
-  soundEnabled,
-  onToggleSound,
   onOpenRules,
   onOpenSubmit,
   onOpenDaily,
@@ -74,22 +70,6 @@ export const Header: React.FC<HeaderProps> = ({
             className="hover:text-[#1c1917] transition-colors cursor-pointer"
           >
             About
-          </button>
-
-          {/* Sound Toggle */}
-          <button
-            onClick={() => {
-              onToggleSound();
-              soundFX.playClick();
-            }}
-            title={soundEnabled ? 'Mute sound effects' : 'Enable sound effects'}
-            className="p-1 text-[#78716c] hover:text-[#1c1917] transition-colors cursor-pointer"
-          >
-            {soundEnabled ? (
-              <Volume2 className="w-4 h-4 text-[#e05638]" />
-            ) : (
-              <VolumeX className="w-4 h-4 text-[#a8a29e]" />
-            )}
           </button>
 
           {/* Search trigger */}
