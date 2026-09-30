@@ -14,11 +14,10 @@ import { RulesModal } from './components/RulesModal';
 import { Footer } from './components/Footer';
 import { INITIAL_LISTINGS, INITIAL_ACTIVITIES } from './data/initialListings';
 import { Listing, Category, ActivityEvent } from './types';
+import { soundFX } from './utils/audio';
 
 const STORAGE_LISTINGS_KEY = 'topbid_v6_listings';
 const STORAGE_ACTIVITIES_KEY = 'topbid_v6_activities';
-const STORAGE_SOUND_KEY = 'topbid_sound_enabled';
-const STORAGE_THEME_KEY = 'topbid_theme';
 
 const ALL_CATEGORIES: Category[] = [
   'All',
@@ -67,12 +66,6 @@ export default function App() {
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [quickClaimUrl, setQuickClaimUrl] = useState('');
   const [quickClaimBid, setQuickClaimBid] = useState<number | undefined>(undefined);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle('dark', darkMode);
-    document.body.classList.toggle('theme-dark', darkMode);
-    try { localStorage.setItem(STORAGE_THEME_KEY, darkMode ? 'dark' : 'light'); } catch {}
-  }, [darkMode]);
 
   useEffect(() => {
     try {
