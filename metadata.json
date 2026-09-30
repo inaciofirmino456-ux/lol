@@ -1,0 +1,6 @@
+{
+  "name": "topbid - Rank is what you pay",
+  "description": "The public leaderboard where rank is what you pay. Pay more, rank higher.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
