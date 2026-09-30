@@ -72,6 +72,7 @@ export default function App() {
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [targetListingForOutbid, setTargetListingForOutbid] = useState<Listing | null>(null);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
+  const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [quickClaimUrl, setQuickClaimUrl] = useState('');
   const [quickClaimBid, setQuickClaimBid] = useState<number | undefined>(undefined);
 
@@ -277,6 +278,7 @@ export default function App() {
           onQuickClaim={handleQuickClaim}
           activeNavTab={activeNavTab}
           setActiveNavTab={setActiveNavTab}
+          onOpenExplore={() => setIsExploreOpen(true)}
         />
 
         {/* Categories & Search Filter */}
@@ -298,6 +300,32 @@ export default function App() {
       </main>
 
       {/* Footer */}
+      {isExploreOpen && (
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm p-4 flex items-center justify-center" onClick={() => setIsExploreOpen(false)}>
+          <div className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl bg-[#faf6f3] border border-[#ebdcd4] shadow-2xl p-5" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between gap-3 mb-5">
+              <div><h2 className="text-xl font-black text-[#1c1917]">Explore</h2><p className="text-xs text-[#78716c] mt-1">See each category and who is leading it.</p></div>
+              <button type="button" onClick={() => setIsExploreOpen(false)} className="px-3 py-1.5 rounded-full bg-[#f3eae4] text-xs font-bold text-[#57534e]">Close</button>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              {ALL_CATEGORIES.filter((cat) => cat !== 'All').map((cat) => {
+                const categoryListings = listings.filter((item) => item.category === cat).sort((a,b) => b.bid-a.bid);
+                const leader = categoryListings[0];
+                return (
+                  <button key={cat} type="button" onClick={() => { setSelectedCategory(cat); setIsExploreOpen(false); window.scrollTo({top: 0, behavior: 'smooth'}); }} className="text-left p-4 rounded-2xl bg-white border border-[#ebdcd4] hover:border-[#e05638] transition-colors">
+                    <div className="text-[10px] uppercase tracking-wider font-bold text-[#a8a29e]">{cat}</div>
+                    {leader ? (
+                      <div className="mt-2"><div className="font-bold text-[#1c1917] truncate">#1 {leader.name}</div><div className="text-xs text-[#e05638] font-mono mt-1">${leader.bid.toLocaleString()}</div></div>
+                    ) : (
+                      <div className="mt-2 text-xs text-[#a8a29e]">No real listings yet</div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
       <Footer
         onResetData={handleResetData}
         onOpenRules={() => setIsRulesModalOpen(true)}
