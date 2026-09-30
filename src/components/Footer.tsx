@@ -5,9 +5,12 @@ import { soundFX } from '../utils/audio';
 interface FooterProps {
   onResetData: () => void;
   onOpenRules: () => void;
+  visitors?: number;
+  revenue?: number;
+  productsAdded: number;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onResetData, onOpenRules }) => {
+export const Footer: React.FC<FooterProps> = ({ onResetData, onOpenRules, visitors, revenue = 0, productsAdded }) => {
   return (
     <footer className="w-full border-t border-[#ebdcd4] bg-[#f7f2ed] py-10 text-xs text-[#78716c]">
       <div className="max-w-xl mx-auto px-4 text-center space-y-4">
@@ -27,6 +30,14 @@ export const Footer: React.FC<FooterProps> = ({ onResetData, onOpenRules }) => {
           The public product leaderboard where rank is what you pay. Pay more, rank higher.
         </p>
 
+        <div className="border-y border-[#ebdcd4] py-6 space-y-3">
+          <p className="text-xs text-[#78716c]">Algumas estatísticas sobre este projeto desde o seu lançamento.</p>
+          <div className="grid grid-cols-3 gap-3">
+            <div><div className="text-xl font-black text-[#1c1917]">{visitors == null ? "—" : visitors.toLocaleString()}</div><div className="text-[10px] uppercase tracking-wider text-[#a8a29e]">visitantes</div></div>
+            <div><div className="text-xl font-black text-[#1c1917]">${revenue.toLocaleString()}</div><div className="text-[10px] uppercase tracking-wider text-[#a8a29e]">receita</div></div>
+            <div><div className="text-xl font-black text-[#1c1917]">{productsAdded.toLocaleString()}</div><div className="text-[10px] uppercase tracking-wider text-[#a8a29e]">produtos adicionados</div></div>
+          </div>
+        </div>
         <div className="flex items-center justify-center gap-4 text-xs font-semibold text-[#57534e]">
           <button
             onClick={() => {
@@ -45,7 +56,7 @@ export const Footer: React.FC<FooterProps> = ({ onResetData, onOpenRules }) => {
             }}
             className="hover:text-[#e05638] transition-colors cursor-pointer"
           >
-            Rules & FAQ
+            Perguntas frequentes
           </button>
           <span>·</span>
           <button
