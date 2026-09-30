@@ -77,52 +77,35 @@ export const Hero: React.FC<HeroProps> = ({
 
   return (
     <div className="max-w-xl mx-auto px-4 pt-4 pb-6 flex flex-col items-center text-center">
-      {/* 1. Nav Filter Capsule: [ All | Leaderboards | Explore ] */}
-      <div className="w-full max-w-sm flex items-center justify-between p-1 rounded-full bg-[#f3eae4] border border-[#ebdcd4] text-xs font-semibold mb-4 shadow-xs">
-        <button
-          onClick={() => {
-            soundFX.playClick();
-            setActiveNavTab('all');
-          }}
-          className={`flex items-center justify-center gap-1.5 px-4 py-1.5 rounded-full transition-all cursor-pointer ${
-            activeNavTab === 'all'
-              ? 'bg-[#e05638] text-white shadow-xs'
-              : 'text-[#78716c] hover:text-[#1c1917]'
-          }`}
-        >
-          <LayoutGrid className="w-3.5 h-3.5" />
-          <span>All</span>
-        </button>
-
-        <button
-          onClick={() => {
-            soundFX.playClick();
-            setActiveNavTab('leaderboards');
-          }}
-          className={`flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
-            activeNavTab === 'leaderboards'
-              ? 'bg-[#e05638] text-white shadow-xs'
-              : 'text-[#78716c] hover:text-[#1c1917]'
-          }`}
-        >
-          <Trophy className="w-3.5 h-3.5" />
-          <span>Leaderboards</span>
-        </button>
-
-        <button
-          onClick={() => {
-            soundFX.playClick();
-            setActiveNavTab('explore');
-          }}
-          className={`flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full transition-all cursor-pointer ${
-            activeNavTab === 'explore'
-              ? 'bg-[#e05638] text-white shadow-xs'
-              : 'text-[#78716c] hover:text-[#1c1917]'
-          }`}
-        >
-          <Compass className="w-3.5 h-3.5" />
-          <span>Explore</span>
-        </button>
+      {/* 1. Horizontally scrollable navigation, matching Outbid's mobile behavior */}
+      <div className="w-full mb-4 overflow-x-auto scrollbar-none touch-pan-x">
+        <div className="flex w-max min-w-full items-center gap-1 rounded-full bg-[#f3eae4] border border-[#ebdcd4] p-1 text-xs font-semibold shadow-xs">
+          {[
+            ['all', 'All'], ['leaderboards', 'Leaderboards'], ['marketing', 'Marketing'], ['seo', 'SEO'],
+            ['productivity', 'Productivity'], ['agents', 'Agents'], ['developer', 'Developer'], ['crypto', 'Crypto'],
+            ['other', 'Other'], ['games', 'Games'], ['health', 'Health'], ['business', 'Business'],
+            ['ecommerce', 'Ecommerce'], ['travel', 'Travel'], ['directories', 'Directories'], ['agencies', 'Agencies'],
+            ['ai-media', 'AI Media'], ['social', 'Social'], ['education', 'Education'], ['people', 'People'],
+            ['design', 'Design'], ['hiring', 'Hiring'], ['domains', 'Domains'], ['sales', 'Sales'],
+            ['security', 'Security'], ['news', 'News'], ['real-estate', 'Real Estate'], ['writing', 'Writing'],
+            ['audio', 'Audio'], ['analytics', 'Analytics'], ['product-management', 'Product Management'],
+          ].map(([id, label]) => (
+            <button
+              key={id}
+              onClick={() => {
+                soundFX.playClick();
+                setActiveNavTab(id);
+              }}
+              className={`shrink-0 px-3 py-1.5 rounded-full whitespace-nowrap transition-all cursor-pointer ${
+                activeNavTab === id
+                  ? 'bg-[#e05638] text-white shadow-xs'
+                  : 'text-[#78716c] hover:text-[#1c1917] hover:bg-white/60'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* No fabricated visitor/online counters. These values will appear only when real activity exists. */}
