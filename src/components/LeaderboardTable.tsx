@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { ExternalLink, Bot, Megaphone, Sparkles, Zap, MousePointerClick, Tag, Clock } from 'lucide-react';
 import { Listing } from '../types';
 import { soundFX } from '../utils/audio';
@@ -16,6 +16,22 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
   onListingClick,
   isTodayView = false,
 }) => {
+  const PAGE_SIZE = 50;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [listings]);
+
+  const totalPages = Math.max(1, Math.ceil(listings.length / PAGE_SIZE));
+  const safePage = Math.min(currentPage, totalPages);
+  const startIndex = (safePage - 1) * PAGE_SIZE;
+  const visibleListings = listings.slice(startIndex, startIndex + PAGE_SIZE);
+
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i + 1).filter((page) =>
+    page <= 4 || page === totalPages || Math.abs(page - safePage) <= 1
+  );
+
   if (listings.length === 0) {
     return (
       <div className="max-w-xl mx-auto px-4 py-8">
@@ -36,8 +52,34 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
 
   return (
     <div className="max-w-xl mx-auto px-4 pb-16 space-y-3.5">
-      {listings.map((item, index) => {
-        const rank = index + 1;
+      <div className="flex items-center justify-between gap-3 px-1 text-xs text-[#78716c]">
+        <span>{startIndex + 1} - {Math.min(startIndex + PAGE_SIZE, listings.length)} de {listings.length}</span>
+        <span>{totalPages > 1 ? `página ${safePage} de ${totalPages}` : ''}</span>
+      </div>
+
+      {totalPages > 1 && (
+        <nav className="flex items-center justify-center gap-1 py-1" aria-label="Leaderboard pagination">
+          {pageNumbers.map((page, index) => {
+            const previous = pageNumbers[index - 1];
+            return (
+              <React.Fragment key={page}>
+                {previous && page - previous > 1 && <span className="px-1 text-[#a8a29e]">…</span>}
+                <button
+                  type="button"
+                  onClick={() => setCurrentPage(page)}
+                  className={`min-w-8 h-8 px-2 rounded-full text-xs font-bold transition-colors cursor-pointer ${safePage === page ? 'bg-[#e05638] text-white' : 'text-[#57534e] hover:bg-[#f3eae4]'}`}
+                  aria-current={safePage === page ? 'page' : undefined}
+                >
+                  {page}
+                </button>
+              </React.Fragment>
+            );
+          })}
+        </nav>
+      )}
+
+      {visibleListings.map((item, index) => {
+        const rank = startIndex + index + 1;
         const bidAmount = isTodayView ? item.todayBid : item.bid;
 
         // Choose a suitable clean icon matching outbid.lol monoline icons
