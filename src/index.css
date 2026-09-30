@@ -30,14 +30,17 @@
 /* Functional light/dark theme. */
 html.dark { color-scheme: dark; }
 body.theme-dark { background:#1c1917 !important; color:#f8f3ef !important; }
-body.theme-dark .bg-\\[\\#faf6f3\\] { background-color:#1c1917 !important; }
-body.theme-dark .bg-\\[\\#ffffff\\], body.theme-dark .bg-\\[\\#fffcf9\\] { background-color:#292524 !important; }
-body.theme-dark .bg-\\[\\#fbf5f0\\], body.theme-dark .bg-\\[\\#fbf6f2\\], body.theme-dark .bg-\\[\\#f7f2ed\\] { background-color:#292524 !important; }
-body.theme-dark .bg-\\[\\#f3eae4\\], body.theme-dark .bg-\\[\\#f6eee7\\], body.theme-dark .bg-\\[\\#f8f3ef\\] { background-color:#3a332f !important; }
-body.theme-dark .border-\\[\\#ebdcd4\\], body.theme-dark .border-\\[\\#e5d5cc\\], body.theme-dark .border-\\[\\#d6c7be\\] { border-color:#4a403a !important; }
-body.theme-dark .text-\\[\\#1c1917\\] { color:#f8f3ef !important; }
-body.theme-dark .text-\\[\\#57534e\\], body.theme-dark .text-\\[\\#78716c\\], body.theme-dark .text-\\[\\#a8a29e\\] { color:#c9beb7 !important; }
-body.theme-dark .text-\\[\\#e05638\\], body.theme-dark .text-\\[\\#c44125\\] { color:#f08b70 !important; }
+body.theme-dark [class~="bg-[#faf6f3]"] { background-color:#1c1917 !important; }
+body.theme-dark [class~="bg-[#ffffff]"], body.theme-dark [class~="bg-[#fffcf9]"] { background-color:#292524 !important; }
+body.theme-dark [class~="bg-[#fbf5f0]"], body.theme-dark [class~="bg-[#fbf6f2]"], body.theme-dark [class~="bg-[#f7f2ed]"] { background-color:#292524 !important; }
+body.theme-dark [class~="bg-[#f3eae4]"], body.theme-dark [class~="bg-[#f6eee7]"], body.theme-dark [class~="bg-[#f8f3ef]"] { background-color:#3a332f !important; }
+body.theme-dark [class~="border-[#ebdcd4]"], body.theme-dark [class~="border-[#e5d5cc]"], body.theme-dark [class~="border-[#d6c7be]"] { border-color:#4a403a !important; }
+body.theme-dark [class~="text-[#1c1917]"] { color:#f8f3ef !important; }
+body.theme-dark [class~="text-[#57534e]"], body.theme-dark [class~="text-[#78716c]"], body.theme-dark [class~="text-[#a8a29e]"] { color:#c9beb7 !important; }
+body.theme-dark [class~="text-[#e05638]"], body.theme-dark [class~="text-[#c44125]"] { color:#f08b70 !important; }
 body.theme-dark input, body.theme-dark select, body.theme-dark textarea { background-color:#292524 !important; color:#f8f3ef !important; border-color:#4a403a !important; }
 body.theme-dark ::-webkit-scrollbar-track { background:#1c1917; }
 body.theme-dark ::-webkit-scrollbar-thumb { background:#4a403a; }
+
+/* Mobile safety: prevent accidental page-wide horizontal overflow while preserving horizontal category rails. */
+html, body, #root { max-width:100%; overflow-x:hidden; }
