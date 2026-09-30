@@ -14,7 +14,6 @@ import { RulesModal } from './components/RulesModal';
 import { Footer } from './components/Footer';
 import { INITIAL_LISTINGS, INITIAL_ACTIVITIES } from './data/initialListings';
 import { Listing, Category, ActivityEvent } from './types';
-import { soundFX } from './utils/audio';
 
 const STORAGE_LISTINGS_KEY = 'topbid_v6_listings';
 const STORAGE_ACTIVITIES_KEY = 'topbid_v6_activities';
@@ -57,19 +56,6 @@ export default function App() {
     return INITIAL_ACTIVITIES;
   });
 
-  const [darkMode, setDarkMode] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') return localStorage.getItem(STORAGE_THEME_KEY) === 'dark';
-    return false;
-  });
-
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem(STORAGE_SOUND_KEY);
-      return saved !== null ? saved === 'true' : true;
-    }
-    return true;
-  });
-
   const [activeNavTab, setActiveNavTab] = useState('all');
   const [timeframe, setTimeframe] = useState<'all' | 'today'>('all');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
@@ -87,15 +73,6 @@ export default function App() {
     document.body.classList.toggle('theme-dark', darkMode);
     try { localStorage.setItem(STORAGE_THEME_KEY, darkMode ? 'dark' : 'light'); } catch {}
   }, [darkMode]);
-
-  useEffect(() => {
-    soundFX.enabled = soundEnabled;
-    try {
-      localStorage.setItem(STORAGE_SOUND_KEY, soundEnabled.toString());
-    } catch {
-      // ignore
-    }
-  }, [soundEnabled]);
 
   useEffect(() => {
     try {
@@ -258,15 +235,10 @@ export default function App() {
     <div className="min-h-screen bg-[#faf6f3] text-[#1c1917] flex flex-col font-sans selection:bg-[#e05638]/20 selection:text-[#e05638]">
       {/* Header with stepped logo */}
       <Header
-        darkMode={darkMode}
-        onToggleTheme={() => setDarkMode((prev) => !prev)}
-        soundEnabled={soundEnabled}
-        onToggleSound={() => setSoundEnabled((prev) => !prev)}
         onOpenRules={() => setIsRulesModalOpen(true)}
         onOpenSubmit={handleOpenSubmit}
         onOpenDaily={() => setTimeframe('today')}
         onOpenCategories={() => document.getElementById('leaderboard-filter')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-        onOpenSearch={() => document.getElementById('leaderboard-filter')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
       />
 
       {/* Real activity only: this remains empty until real users submit bids. */}
