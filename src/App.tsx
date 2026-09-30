@@ -348,6 +348,8 @@ export default function App() {
       <Footer
         onResetData={handleResetData}
         onOpenRules={() => setIsRulesModalOpen(true)}
+        revenue={totalVolume}
+        productsAdded={listings.length}
       />
 
       {/* Outbid / Claim Modal */}
