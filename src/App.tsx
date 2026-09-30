@@ -16,8 +16,8 @@ import { INITIAL_LISTINGS, INITIAL_ACTIVITIES } from './data/initialListings';
 import { Listing, Category, ActivityEvent } from './types';
 import { soundFX } from './utils/audio';
 
-const STORAGE_LISTINGS_KEY = 'topbid_v5_listings';
-const STORAGE_ACTIVITIES_KEY = 'topbid_v5_activities';
+const STORAGE_LISTINGS_KEY = 'topbid_v6_listings';
+const STORAGE_ACTIVITIES_KEY = 'topbid_v6_activities';
 const STORAGE_SOUND_KEY = 'topbid_sound_enabled';
 
 const ALL_CATEGORIES: Category[] = [
@@ -75,8 +75,6 @@ export default function App() {
   const [quickClaimUrl, setQuickClaimUrl] = useState('');
   const [quickClaimBid, setQuickClaimBid] = useState<number | undefined>(undefined);
 
-  const [onlineCount, setOnlineCount] = useState(35);
-
   useEffect(() => {
     soundFX.enabled = soundEnabled;
     try {
@@ -102,15 +100,6 @@ export default function App() {
     }
   }, [activities]);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setOnlineCount((prev) => {
-        const change = Math.floor(Math.random() * 3) - 1;
-        return Math.max(28, Math.min(48, prev + change));
-      });
-    }, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   const totalVolume = useMemo(() => {
     return listings.reduce((sum, item) => sum + item.bid, 0);
@@ -260,10 +249,9 @@ export default function App() {
         onToggleSound={() => setSoundEnabled((prev) => !prev)}
         onOpenRules={() => setIsRulesModalOpen(true)}
         onOpenSubmit={handleOpenSubmit}
-        onlineCount={onlineCount}
       />
 
-      {/* Live Activity Ticker */}
+      {/* Real activity only: this remains empty until real users submit bids. */}
       <LiveTicker
         activities={activities}
         onSelectOutbid={(name) => {
@@ -284,7 +272,6 @@ export default function App() {
           totalVolume={totalVolume}
           totalClicks={totalClicks}
           totalListingsCount={listings.length}
-          onlineCount={onlineCount}
           timeframe={timeframe}
           onChangeTimeframe={setTimeframe}
           onQuickClaim={handleQuickClaim}
