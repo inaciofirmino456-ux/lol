@@ -1,82 +1,36 @@
 import React from 'react';
-import { RotateCcw, ShieldCheck } from 'lucide-react';
 import { soundFX } from '../utils/audio';
 
 interface FooterProps {
-  onResetData: () => void;
   onOpenRules: () => void;
   visitors?: number;
   revenue?: number;
   productsAdded: number;
 }
 
-export const Footer: React.FC<FooterProps> = ({ onResetData, onOpenRules, visitors, revenue = 0, productsAdded }) => {
-  return (
-    <footer className="w-full border-t border-[#ebdcd4] bg-[#f7f2ed] py-10 text-xs text-[#78716c]">
-      <div className="max-w-xl mx-auto px-4 text-center space-y-4">
-        <div className="flex items-center justify-center gap-2">
-          {/* Stepped Logo */}
-          <div className="flex flex-col gap-0.5 items-start justify-center">
-            <span className="w-3 h-1 rounded-full bg-[#e05638]"></span>
-            <span className="w-4 h-1 rounded-full bg-[#1c1917]"></span>
-            <span className="w-5 h-1 rounded-full bg-[#1c1917]"></span>
-          </div>
-          <span className="text-base font-extrabold text-[#1c1917] tracking-tight">
-            top<span className="text-[#e05638]">bid</span>
-          </span>
+export const Footer: React.FC<FooterProps> = ({ onOpenRules, visitors, revenue = 0, productsAdded }) => (
+  <footer className="w-full border-t border-[#ebdcd4] bg-[#f7f2ed] py-10 text-xs text-[#78716c]">
+    <div className="max-w-xl mx-auto px-4 text-center space-y-4">
+      <div className="flex items-center justify-center gap-2">
+        <div className="flex flex-col gap-0.5 items-start justify-center">
+          <span className="w-3 h-1 rounded-full bg-[#e05638]"></span><span className="w-4 h-1 rounded-full bg-[#1c1917]"></span><span className="w-5 h-1 rounded-full bg-[#1c1917]"></span>
         </div>
-
-        <p className="text-xs text-[#78716c] max-w-sm mx-auto leading-relaxed">
-          The public product leaderboard where rank is what you pay. Pay more, rank higher.
-        </p>
-
-        <div className="border-y border-[#ebdcd4] py-6 space-y-3">
-          <p className="text-xs text-[#78716c]">Algumas estatísticas sobre este projeto desde o seu lançamento.</p>
-          <div className="grid grid-cols-3 gap-3">
-            <div><div className="text-xl font-black text-[#1c1917]">{visitors == null ? "—" : visitors.toLocaleString()}</div><div className="text-[10px] uppercase tracking-wider text-[#a8a29e]">visitantes</div></div>
-            <div><div className="text-xl font-black text-[#1c1917]">${revenue.toLocaleString()}</div><div className="text-[10px] uppercase tracking-wider text-[#a8a29e]">receita</div></div>
-            <div><div className="text-xl font-black text-[#1c1917]">{productsAdded.toLocaleString()}</div><div className="text-[10px] uppercase tracking-wider text-[#a8a29e]">produtos adicionados</div></div>
-          </div>
-        </div>
-        <div className="flex items-center justify-center gap-4 text-xs font-semibold text-[#57534e]">
-          <button
-            onClick={() => {
-              soundFX.playClick();
-              onOpenRules();
-            }}
-            className="hover:text-[#e05638] transition-colors cursor-pointer"
-          >
-            How it works
-          </button>
-          <span>·</span>
-          <button
-            onClick={() => {
-              soundFX.playClick();
-              onOpenRules();
-            }}
-            className="hover:text-[#e05638] transition-colors cursor-pointer"
-          >
-            Perguntas frequentes
-          </button>
-          <span>·</span>
-          <button
-            onClick={() => {
-              soundFX.playClick();
-              if (window.confirm('Reset all listings to empty state?')) {
-                onResetData();
-              }
-            }}
-            className="hover:text-[#e05638] transition-colors cursor-pointer flex items-center gap-1"
-          >
-            <RotateCcw className="w-3 h-3" />
-            <span>Reset</span>
-          </button>
-        </div>
-
-        <div className="pt-4 border-t border-[#ebdcd4]/70 text-[11px] text-[#a8a29e]">
-          <p>© {new Date().getFullYear()} topbid · Rank is what you pay.</p>
+        <span className="text-base font-extrabold text-[#1c1917] tracking-tight">top<span className="text-[#e05638]">bid</span></span>
+      </div>
+      <p className="text-xs text-[#78716c] max-w-sm mx-auto leading-relaxed">The public product leaderboard where rank is what you pay. Pay more, rank higher.</p>
+      <div className="border-y border-[#ebdcd4] py-6 space-y-3">
+        <p className="text-xs text-[#78716c]">Algumas estatísticas sobre este projeto desde o seu lançamento.</p>
+        <div className="grid grid-cols-3 gap-3">
+          <div><div className="text-xl font-black text-[#1c1917]">{visitors == null ? "—" : visitors.toLocaleString()}</div><div className="text-[10px] uppercase tracking-wider text-[#a8a29e]">visitantes</div></div>
+          <div><div className="text-xl font-black text-[#1c1917]">$ {revenue.toLocaleString()}</div><div className="text-[10px] uppercase tracking-wider text-[#a8a29e]">receita</div></div>
+          <div><div className="text-xl font-black text-[#1c1917]">{productsAdded.toLocaleString()}</div><div className="text-[10px] uppercase tracking-wider text-[#a8a29e]">produtos adicionados</div></div>
         </div>
       </div>
-    </footer>
-  );
-};
+      <div className="flex items-center justify-center gap-4 text-xs font-semibold text-[#57534e]">
+        <button onClick={() => { soundFX.playClick(); onOpenRules(); }} className="hover:text-[#e05638] transition-colors cursor-pointer">Como funciona</button><span>·</span>
+        <button onClick={() => { soundFX.playClick(); onOpenRules(); }} className="hover:text-[#e05638] transition-colors cursor-pointer">Perguntas frequentes</button>
+      </div>
+      <div className="pt-4 border-t border-[#ebdcd4]/70 text-[11px] text-[#a8a29e]"><p>© {new Date().getFullYear()} topbid · A sua posição no ranking é o que você paga.</p></div>
+    </div>
+  </footer>
+);
