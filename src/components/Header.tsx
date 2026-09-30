@@ -10,6 +10,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({
+  darkMode,
+  onToggleTheme,
   soundEnabled,
   onToggleSound,
   onOpenRules,
