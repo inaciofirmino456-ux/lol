@@ -316,9 +316,7 @@ export default function App() {
                     <div className="text-[10px] uppercase tracking-wider font-bold text-[#a8a29e]">{cat}</div>
                     {leader ? (
                       <div className="mt-2"><div className="font-bold text-[#1c1917] truncate">#1 {leader.name}</div><div className="text-xs text-[#e05638] font-mono mt-1">${leader.bid.toLocaleString()}</div></div>
-                    ) : (
-                      <div className="mt-2 text-xs text-[#a8a29e]">No real listings yet</div>
-                    )}
+                    ) : null}
                   </button>
                 );
               })}
