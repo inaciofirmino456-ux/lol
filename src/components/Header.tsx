@@ -7,7 +7,6 @@ interface HeaderProps {
   onToggleSound: () => void;
   onOpenRules: () => void;
   onOpenSubmit: () => void;
-  onlineCount: number;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -15,7 +14,6 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSound,
   onOpenRules,
   onOpenSubmit,
-  onlineCount,
 }) => {
   return (
     <header className="sticky top-0 z-40 w-full bg-[#faf6f3]/90 backdrop-blur-md border-b border-[#ebdcd4]">
