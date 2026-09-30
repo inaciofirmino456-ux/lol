@@ -19,6 +19,7 @@ import { soundFX } from './utils/audio';
 const STORAGE_LISTINGS_KEY = 'topbid_v6_listings';
 const STORAGE_ACTIVITIES_KEY = 'topbid_v6_activities';
 const STORAGE_SOUND_KEY = 'topbid_sound_enabled';
+const STORAGE_THEME_KEY = 'topbid_theme';
 
 const ALL_CATEGORIES: Category[] = [
   'All',
@@ -56,6 +57,11 @@ export default function App() {
     return INITIAL_ACTIVITIES;
   });
 
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') return localStorage.getItem(STORAGE_THEME_KEY) === 'dark';
+    return false;
+  });
+
   const [soundEnabled, setSoundEnabled] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const saved = localStorage.getItem(STORAGE_SOUND_KEY);
@@ -75,6 +81,12 @@ export default function App() {
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [quickClaimUrl, setQuickClaimUrl] = useState('');
   const [quickClaimBid, setQuickClaimBid] = useState<number | undefined>(undefined);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark', darkMode);
+    document.body.classList.toggle('theme-dark', darkMode);
+    try { localStorage.setItem(STORAGE_THEME_KEY, darkMode ? 'dark' : 'light'); } catch {}
+  }, [darkMode]);
 
   useEffect(() => {
     soundFX.enabled = soundEnabled;
@@ -246,10 +258,15 @@ export default function App() {
     <div className="min-h-screen bg-[#faf6f3] text-[#1c1917] flex flex-col font-sans selection:bg-[#e05638]/20 selection:text-[#e05638]">
       {/* Header with stepped logo */}
       <Header
+        darkMode={darkMode}
+        onToggleTheme={() => setDarkMode((prev) => !prev)}
         soundEnabled={soundEnabled}
         onToggleSound={() => setSoundEnabled((prev) => !prev)}
         onOpenRules={() => setIsRulesModalOpen(true)}
         onOpenSubmit={handleOpenSubmit}
+        onOpenDaily={() => setTimeframe('today')}
+        onOpenCategories={() => document.getElementById('leaderboard-filter')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+        onOpenSearch={() => document.getElementById('leaderboard-filter')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
       />
 
       {/* Real activity only: this remains empty until real users submit bids. */}
@@ -284,6 +301,7 @@ export default function App() {
         />
 
         {/* Categories & Search Filter */}
+        <div id="leaderboard-filter">
         <FilterBar
           selectedCategory={selectedCategory}
           onChangeCategory={setSelectedCategory}
@@ -291,6 +309,7 @@ export default function App() {
           onSearchChange={setSearchQuery}
           categories={ALL_CATEGORIES}
         />
+        </div>
 
         {/* Exact Peach Cards from Screenshot */}
         <LeaderboardTable
