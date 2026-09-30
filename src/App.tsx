@@ -276,6 +276,8 @@ export default function App() {
           timeframe={timeframe}
           onChangeTimeframe={setTimeframe}
           onQuickClaim={handleQuickClaim}
+          selectedCategory={selectedCategory}
+          onChangeCategory={setSelectedCategory}
           activeNavTab={activeNavTab}
           setActiveNavTab={setActiveNavTab}
           onOpenExplore={() => setIsExploreOpen(true)}
