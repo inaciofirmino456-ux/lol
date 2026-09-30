@@ -346,7 +346,6 @@ export default function App() {
         </div>
       )}
       <Footer
-        onResetData={handleResetData}
         onOpenRules={() => setIsRulesModalOpen(true)}
         revenue={totalVolume}
         productsAdded={listings.length}
