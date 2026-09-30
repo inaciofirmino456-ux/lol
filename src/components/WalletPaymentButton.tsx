@@ -19,7 +19,7 @@ type PaymentOption =
 const PAYMENT_OPTIONS: PaymentOption[] = [
   { id: 'eth', label: 'ETH · Ethereum', symbol: 'ETH', chainId: 1, kind: 'native', recipient: '0x1291637D7635Ca893465CB764e9f2AF18C910109', decimals: 18 },
   { id: 'usdc-base', label: 'USDC · Base', symbol: 'USDC', chainId: 8453, kind: 'erc20', recipient: '0xD86dDD14536D9F1895cD42AF168C0686d6Be2B40', token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6 },
-  { id: 'usdt-base', label: 'USDT · Base', symbol: 'USDT', chainId: 8453, kind: 'erc20', recipient: '0xD86dDD14536D9F1895cD42AF168C0686d6Be2B40', token: '0x4C2e2E9fF6b8B8B2f3A7cB0cE3bA9d7D6F7cE0B5', decimals: 6 },
+  { id: 'usdt-base', label: 'USDT · Base', symbol: 'USDT', chainId: 8453, kind: 'erc20', recipient: '0xD86dDD14536D9F1895cD42AF168C0686d6Be2B40', token: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', decimals: 6 },
   { id: 'usdc-bsc', label: 'USDC · BNB Chain', symbol: 'USDC', chainId: 56, kind: 'erc20', recipient: '0xD86dDD14536D9F1895cD42AF168C0686d6Be2B40', token: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18 },
 ];
 
@@ -49,7 +49,7 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
   const { sendTransactionAsync, isPending: isNativePending } = useSendTransaction();
   const { writeContractAsync, isPending: isTokenPending } = useWriteContract();
   const [selectedId, setSelectedId] = useState<PaymentOption['id']>('usdc-base');
-  const [ethUsd, setEthUsd] = useState<number | null>(null);
+  const [assetUsd, setAssetUsd] = useState<Record<string, number>>({});
   const [txHash, setTxHash] = useState<`0x${string}`>();
   const [error, setError] = useState('');
 
@@ -61,19 +61,24 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
 
   useEffect(() => {
     let cancelled = false;
-    const loadEthPrice = async () => {
+    const loadPrices = async () => {
       try {
-        const response = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=ETH');
-        if (!response.ok) throw new Error('price');
-        const data = await response.json();
-        const price = Number(data?.data?.rates?.USD);
-        if (!cancelled && Number.isFinite(price) && price > 0) setEthUsd(price);
+        const symbols = ['ETH', 'USDC', 'USDT'];
+        const entries = await Promise.all(symbols.map(async (symbol) => {
+          const response = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=' + symbol);
+          if (!response.ok) throw new Error('price');
+          const data = await response.json();
+          const price = Number(data?.data?.rates?.USD);
+          return [symbol, price] as const;
+        }));
+        const prices = Object.fromEntries(entries.filter(([, price]) => Number.isFinite(price) && price > 0));
+        if (!cancelled) setAssetUsd(prices);
       } catch {
-        if (!cancelled) setEthUsd(null);
+        // Keep the previous successful quote if the provider is temporarily unavailable.
       }
     };
-    loadEthPrice();
-    const timer = window.setInterval(loadEthPrice, 30000);
+    loadPrices();
+    const timer = window.setInterval(loadPrices, 30000);
     return () => { cancelled = true; window.clearInterval(timer); };
   }, []);
 
@@ -96,17 +101,23 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
       let hash: `0x${string}`;
 
       if (selected.kind === 'native') {
-        if (!ethUsd) {
-          setError('Cotação ETH indisponível. Tenta novamente.');
+        const price = assetUsd[selected.symbol];
+        if (!price) {
+          setError('Cotação indisponível. Tenta novamente.');
           return;
         }
-        const ethAmount = usdAmount / ethUsd;
+        const ethAmount = usdAmount / price;
         hash = await sendTransactionAsync({
           to: selected.recipient,
           value: parseEther(ethAmount.toFixed(18)),
         });
       } else {
-        const tokenAmount = parseUnits(usdAmount.toFixed(selected.decimals), selected.decimals);
+        const price = assetUsd[selected.symbol];
+        if (!price) {
+          setError('Cotação indisponível. Tenta novamente.');
+          return;
+        }
+        const tokenAmount = parseUnits((usdAmount / price).toFixed(selected.decimals), selected.decimals);
         hash = await writeContractAsync({
           address: selected.token,
           abi: ERC20_ABI,
@@ -139,7 +150,9 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
         </button>
       </div>
       <div className="text-[11px] text-[#78716c]">
-        {selected.symbol === 'ETH' && ethUsd ? '≈ ' + (usdAmount / ethUsd).toFixed(6) + ' ETH' : '≈ ' + usdAmount.toFixed(2) + ' ' + selected.symbol}
+        {assetUsd[selected.symbol]
+          ? '≈ ' + (usdAmount / assetUsd[selected.symbol]).toFixed(selected.symbol === 'ETH' ? 6 : 4) + ' ' + selected.symbol
+          : 'A obter cotação…'}
         {isConnected && <span> · {shortAddress}</span>}
       </div>
       {isConfirming && <div className="flex items-center gap-2 text-[11px] text-[#78716c]"><Loader2 className="w-3.5 h-3.5 animate-spin" />A aguardar confirmação da blockchain…</div>}
