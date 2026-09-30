@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Globe, Minus, Plus, Trophy, Flame, LayoutGrid, Compass, TrendingUp, MousePointerClick, Clock, Sparkles } from 'lucide-react';
 import { soundFX } from '../utils/audio';
+import { Category } from '../types';
 
 interface HeroProps {
   topListingBid: number;
@@ -10,6 +11,8 @@ interface HeroProps {
   timeframe: 'all' | 'today';
   onChangeTimeframe: (tf: 'all' | 'today') => void;
   onQuickClaim: (urlOrHandle: string, bidAmount: number) => void;
+  selectedCategory: Category;
+  onChangeCategory: (cat: Category) => void;
   activeNavTab: string;
   setActiveNavTab: (tab: string) => void;
   onOpenExplore: () => void;
@@ -23,6 +26,8 @@ export const Hero: React.FC<HeroProps> = ({
   timeframe,
   onChangeTimeframe,
   onQuickClaim,
+  selectedCategory,
+  onChangeCategory,
   activeNavTab,
   setActiveNavTab,
   onOpenExplore,
@@ -200,6 +205,26 @@ export const Hero: React.FC<HeroProps> = ({
             className="w-full pl-12 pr-4 py-3.5 rounded-full bg-white border border-[#e5d5cc] text-[#1c1917] placeholder-[#a8a29e] text-sm sm:text-base focus:outline-none focus:border-[#e05638] shadow-xs transition-colors"
           />
         </div>
+
+        <select
+          value={selectedCategory}
+          onChange={(e) => {
+            soundFX.playClick();
+            onChangeCategory(e.target.value as Category);
+          }}
+          className="w-full px-4 py-3 rounded-full bg-white border border-[#e5d5cc] text-[#57534e] text-sm focus:outline-none focus:border-[#e05638] shadow-xs appearance-none"
+          aria-label="Choose a category"
+        >
+          <option value="All">Choose a category</option>
+          <option value="AI & Agents">AI & Agents</option>
+          <option value="Marketing & SEO">Marketing & SEO</option>
+          <option value="Developer Tools">Developer Tools</option>
+          <option value="SaaS & Productivity">SaaS & Productivity</option>
+          <option value="Design & Creative">Design & Creative</option>
+          <option value="X / Twitter Profiles">X / Twitter Profiles</option>
+          <option value="Crypto & Web3">Crypto & Web3</option>
+          <option value="Side Projects">Side Projects</option>
+        </select>
 
         <button
           type="submit"
