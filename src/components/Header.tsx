@@ -42,6 +42,11 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Navigation links matching screenshot */}
         <div className="flex items-center gap-4 text-xs font-semibold text-[#57534e]">
+          {/* Online status stays visible; no fabricated visitor count. */}
+          <div className="hidden sm:flex items-center gap-1.5 uppercase tracking-wider text-[10px] font-bold text-[#57534e]" title="Online">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+            <span>Online</span>
+          </div>
           <button
             onClick={() => onOpenRules()}
             className="hover:text-[#1c1917] transition-colors cursor-pointer"
