@@ -7,7 +7,6 @@ interface HeroProps {
   totalVolume: number;
   totalClicks: number;
   totalListingsCount: number;
-  onlineCount: number;
   timeframe: 'all' | 'today';
   onChangeTimeframe: (tf: 'all' | 'today') => void;
   onQuickClaim: (urlOrHandle: string, bidAmount: number) => void;
@@ -20,7 +19,6 @@ export const Hero: React.FC<HeroProps> = ({
   totalVolume,
   totalClicks,
   totalListingsCount,
-  onlineCount,
   timeframe,
   onChangeTimeframe,
   onQuickClaim,
@@ -127,20 +125,9 @@ export const Hero: React.FC<HeroProps> = ({
         </button>
       </div>
 
-      {/* 2. Live Visitors Pill */}
-      <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#fbf7f4] border border-[#ebdcd4] text-xs text-[#57534e] font-medium mb-3.5 shadow-xs">
-        <span className="flex h-2 w-2 relative">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-        </span>
-        <span className="font-bold text-emerald-600">{onlineCount} online</span>
-        <span className="text-[#a8a29e]">·</span>
-        <span>1,894 visitors today</span>
-        <span className="text-[#a8a29e]">·</span>
-        <span className="text-[#78716c] hover:text-[#e05638] cursor-pointer">stats→</span>
-      </div>
+      {/* No fabricated visitor/online counters. These values will appear only when real activity exists. */}
 
-      {/* 3. Timeframe Toggle: [ 🏆 All-time | 🔴 Today ] */}
+      {/* 2. Timeframe Toggle: [ 🏆 All-time | 🔴 Today ] */}
       <div className="inline-flex items-center p-1 rounded-full bg-[#f3eae4] border border-[#ebdcd4] text-xs font-semibold mb-5 shadow-xs">
         <button
           onClick={() => {
@@ -173,7 +160,7 @@ export const Hero: React.FC<HeroProps> = ({
         </button>
       </div>
 
-      {/* 4. Claim #1 for [-] $Amount [+] */}
+      {/* 3. Claim #1 for [-] $Amount [+] */}
       <div className="flex items-center justify-center gap-2 mb-4 flex-wrap">
         <h1 className="text-3xl sm:text-4xl font-extrabold text-[#1c1917] tracking-tight">
           Claim #1 for
@@ -204,7 +191,7 @@ export const Hero: React.FC<HeroProps> = ({
         </div>
       </div>
 
-      {/* 5. Input Form & Claim Button */}
+      {/* 4. Input Form & Claim Button */}
       <form onSubmit={handleClaim} className="w-full space-y-3 mb-6">
         <div className="relative w-full">
           <Globe className="w-5 h-5 text-[#a8a29e] absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -226,7 +213,7 @@ export const Hero: React.FC<HeroProps> = ({
         </button>
       </form>
 
-      {/* 6. Graphics & Statistics Cards Grid */}
+      {/* 5. Real Statistics Cards Grid */}
       <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 text-left">
         <div className="p-3 rounded-2xl bg-[#fef4ee] border border-[#f8e5da] shadow-xs">
           <div className="flex items-center gap-1.5 text-[#78716c] text-[10px] font-bold uppercase tracking-wider mb-0.5">
@@ -263,8 +250,10 @@ export const Hero: React.FC<HeroProps> = ({
             <Clock className="w-3 h-3 text-[#e05638]" />
             <span>24h Reset</span>
           </div>
-          <div className="text-base font-bold font-mono text-[#e05638]">
-            {format2(timeLeft.hours)}:{format2(timeLeft.minutes)}:{format2(timeLeft.seconds)}
+          <div className="text-sm font-bold text-[#e05638]">
+            {totalListingsCount > 0
+              ? `${format2(timeLeft.hours)}:${format2(timeLeft.minutes)}:${format2(timeLeft.seconds)}`
+              : 'Waiting for first bid'}
           </div>
         </div>
       </div>
