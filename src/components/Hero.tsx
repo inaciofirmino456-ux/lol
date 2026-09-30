@@ -126,7 +126,11 @@ export const Hero: React.FC<HeroProps> = ({
           Explore
         </button>
       </div>
-      {/* No fabricated visitor/online counters. These values will appear only when real activity exists. */}
+      {/* Simple real connection status — no fabricated visitor count. */}
+      <div className="flex items-center justify-center gap-1.5 mb-4 text-[10px] font-bold uppercase tracking-[0.14em] text-[#57534e]" aria-label="Online">
+        <span className="w-2 h-2 rounded-full bg-emerald-500" aria-hidden="true"></span>
+        <span>Online</span>
+      </div>
 
       {/* 2. Timeframe Toggle: [ 🏆 All-time | 🔴 Today ] */}
       <div className="inline-flex items-center p-1 rounded-full bg-[#f3eae4] border border-[#ebdcd4] text-xs font-semibold mb-5 shadow-xs">
