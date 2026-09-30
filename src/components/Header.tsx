@@ -3,6 +3,8 @@ import { Search, Moon, Sun, Volume2, VolumeX, HelpCircle, Plus } from 'lucide-re
 import { soundFX } from '../utils/audio';
 
 interface HeaderProps {
+  darkMode: boolean;
+  onToggleTheme: () => void;
   soundEnabled: boolean;
   onToggleSound: () => void;
   onOpenRules: () => void;
