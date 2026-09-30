@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Zap, Trophy, ShieldCheck, ArrowRight, CheckCircle2, Sparkles, CreditCard, Lock, Globe } from 'lucide-react';
+import { X, Zap, ArrowRight, CheckCircle2, CreditCard, Globe } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Category, Listing } from '../types';
 import { WalletPaymentButton } from './WalletPaymentButton';
@@ -109,47 +109,45 @@ export const OutbidModal: React.FC<OutbidModalProps> = ({
     setBidAmount(topBid > 0 ? topBid + 1 : 1);
   };
 
+  const finalizePaidBid = () => {
+    setIsProcessing(false);
+    setIsSuccess(true);
+    soundFX.playCashRegister();
+    soundFX.playRankClimb();
+
+    try {
+      confetti({
+        particleCount: 90,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#e05638', '#f08b70', '#fbdcd0', '#1c1917', '#ffffff']
+      });
+    } catch {
+      // ignore
+    }
+
+    setTimeout(() => {
+      onSuccessfulBid(
+        {
+          name,
+          tagline: tagline || 'The future of innovation.',
+          url: url.startsWith('http') || url.startsWith('@') ? url : `https://${url}`,
+          category,
+          icon,
+          bid: bidAmount,
+          todayBid: bidAmount,
+        },
+        bidAmount,
+        targetListing ? targetListing.id : undefined
+      );
+      onClose();
+    }, 1200);
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim() || !name.trim()) return;
-
     setIsProcessing(true);
-    soundFX.playClick();
-
-    setTimeout(() => {
-      setIsProcessing(false);
-      setIsSuccess(true);
-      soundFX.playCashRegister();
-      soundFX.playRankClimb();
-
-      try {
-        confetti({
-          particleCount: 90,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ['#e05638', '#f08b70', '#fbdcd0', '#1c1917', '#ffffff']
-        });
-      } catch {
-        // ignore
-      }
-
-      setTimeout(() => {
-        onSuccessfulBid(
-          {
-            name,
-            tagline: tagline || 'The future of innovation.',
-            url: url.startsWith('http') || url.startsWith('@') ? url : `https://${url}`,
-            category,
-            icon,
-            bid: bidAmount,
-            todayBid: bidAmount,
-          },
-          bidAmount,
-          targetListing ? targetListing.id : undefined
-        );
-        onClose();
-      }, 1200);
-    }, 900);
   };
 
   if (!isOpen) return null;
@@ -349,29 +347,22 @@ export const OutbidModal: React.FC<OutbidModalProps> = ({
               </div>
             </div>
 
-            {/* Test Payment notice & Submit button */}
-            <div className="pt-2">
-              <div className="flex items-center gap-2 p-2.5 rounded-xl bg-[#f8f3ef] text-[11px] text-[#78716c] mb-3">
-                <Lock className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                <span>Simulated instant checkout. Click below to claim position.</span>
-              </div>
-
-              <WalletPaymentButton />
+            {/* Real wallet payment */}
+            <div className="pt-2 border-t border-[#f3eae4]">
+              <WalletPaymentButton
+                usdAmount={bidAmount}
+                onPaid={finalizePaidBid}
+                disabled={!url.trim() || !name.trim() || bidAmount < 1}
+              />
 
               <button
-                type="submit"
-                disabled={isProcessing}
-                className="w-full py-3.5 px-4 rounded-full bg-[#f08b70] hover:bg-[#e05638] text-white font-bold text-base shadow-md shadow-[#e05638]/20 active:scale-[0.99] disabled:opacity-50 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                type="button"
+                disabled
+                className="w-full mt-2 py-3 px-4 rounded-full border border-[#ebdcd4] bg-[#f8f3ef] text-[#a8a29e] font-semibold text-sm flex items-center justify-center gap-2 cursor-not-allowed"
+                title="Card payments will be enabled separately."
               >
-                {isProcessing ? (
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <>
-                    <CreditCard className="w-4 h-4 stroke-[2.5]" />
-                    <span>Pay ${bidAmount.toLocaleString()} & Claim Rank #{estimatedRank}</span>
-                    <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-                  </>
-                )}
+                <CreditCard className="w-4 h-4" />
+                <span>Pagamento por cartão — em breve</span>
               </button>
             </div>
           </form>
