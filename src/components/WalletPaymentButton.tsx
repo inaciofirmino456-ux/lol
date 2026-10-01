@@ -136,7 +136,7 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
     return result;
   };
 
-  const handleSolanaPay = async (amount: bigint) => {
+  const handleSolanaPay = async (amount: bigint, paymentOrderId: string) => {
     if (!solProvider || !solAddress) {
       open({ view: 'Connect', namespace: 'solana' });
       return;
@@ -196,11 +196,11 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
     }, 'confirmed');
     setConfirmingOther(false);
     setConfirmedOther(true);
-    await verifyPayment(orderId!, signature);
+    await verifyPayment(paymentOrderId, signature);
     onPaid(signature);
   };
 
-  const handleBitcoinPay = async (amountBtc: bigint) => {
+  const handleBitcoinPay = async (amountBtc: bigint, paymentOrderId: string) => {
     if (!btcProvider || !btcAddress) {
       open({ view: 'Connect', namespace: 'bip122' });
       return;
@@ -226,7 +226,7 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
         if (status.confirmed) {
           setConfirmingOther(false);
           setConfirmedOther(true);
-          await verifyPayment(orderId!, txid);
+          await verifyPayment(paymentOrderId, txid);
           onPaid(txid);
           return;
         }
@@ -261,12 +261,12 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
       const expected = BigInt(prepared.expectedUnits);
 
       if (selected.kind === 'bitcoin') {
-        await handleBitcoinPay(expected);
+        await handleBitcoinPay(expected, prepared.orderId);
         return;
       }
 
       if (selected.kind === 'solNative' || selected.kind === 'solSpl') {
-        await handleSolanaPay(expected);
+        await handleSolanaPay(expected, prepared.orderId);
         return;
       }
 
