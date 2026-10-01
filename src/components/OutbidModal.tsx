@@ -352,6 +352,8 @@ export const OutbidModal: React.FC<OutbidModalProps> = ({
               <WalletPaymentButton
                 usdAmount={bidAmount}
                 onPaid={finalizePaidBid}
+                url={url}
+                categorySlug={category.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}
                 disabled={!url.trim() || !name.trim() || bidAmount < 1}
               />
 
