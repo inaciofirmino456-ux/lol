@@ -5,10 +5,9 @@ import {
   useAccount,
   useSendTransaction,
   useSwitchChain,
-  useWaitForTransactionReceipt,
   useWriteContract,
 } from 'wagmi';
-import { parseEther, parseUnits, type Address } from 'viem';
+import { type Address } from 'viem';
 import {
   Connection,
   PublicKey,
@@ -87,15 +86,7 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
   const [confirmingOther, setConfirmingOther] = useState(false);
   const [confirmedOther, setConfirmedOther] = useState(false);
   const [error, setError] = useState('');
-  const [orderId, setOrderId] = useState<string>();
-  const [quote, setQuote] = useState<{expectedUnits:string; rateUsd:number; decimals:number; receivingAddress:string; token?:string|null}>();
-
   const selected = useMemo(() => PAYMENT_OPTIONS.find((o) => o.id === selectedId)!, [selectedId]);
-  const { isLoading: isEvmConfirming, isSuccess: isEvmConfirmed } = useWaitForTransactionReceipt({
-    hash: txHash && txHash.startsWith('0x') ? txHash as `0x${string}` : undefined,
-    chainId: selected.chainId,
-  });
-
   useEffect(() => {
     let cancelled = false;
     const loadPrices = async () => {
@@ -118,20 +109,12 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
     return () => { cancelled = true; window.clearInterval(timer); };
   }, []);
 
-  useEffect(() => {
-    if (isEvmConfirmed && txHash) onPaid(txHash);
-  }, [isEvmConfirmed, txHash, onPaid]);
-
-  useEffect(() => {
-    if (confirmedOther && txHash) onPaid(txHash);
-  }, [confirmedOther, txHash, onPaid]);
-
   const connectedForSelectedNetwork =
     selected.kind === 'bitcoin' ? btcConnected :
     selected.kind === 'solNative' || selected.kind === 'solSpl' ? solConnected :
     evmConnected;
 
-  const busy = isNativePending || isTokenPending || isEvmConfirming || confirmingOther;
+  const busy = isNativePending || isTokenPending || confirmingOther;
 
   const API = 'https://fvpglbppmmexcysuumth.supabase.co/functions/v1';
 
@@ -142,8 +125,6 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
     const instructions = await fetch(API + '/crypto-payment-instructions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: created.orderId, network: selected.network === 'Ethereum' ? 'ethereum' : selected.network === 'Base' ? 'base' : selected.network === 'BNB Chain' ? 'bsc' : selected.network === 'Bitcoin' ? 'bitcoin' : 'solana', asset: selected.symbol }) });
     const q = await instructions.json();
     if (!instructions.ok || !q?.expectedUnits) throw new Error(q?.error || 'Não foi possível obter a cotação de pagamento.');
-    setOrderId(created.orderId);
-    setQuote(q);
     return { orderId: created.orderId as string, expectedUnits: String(q.expectedUnits) };
   };
 
@@ -215,6 +196,8 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
     }, 'confirmed');
     setConfirmingOther(false);
     setConfirmedOther(true);
+    await verifyPayment(orderId!, signature);
+    onPaid(signature);
   };
 
   const handleBitcoinPay = async (amountBtc: bigint) => {
@@ -243,6 +226,8 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
         if (status.confirmed) {
           setConfirmingOther(false);
           setConfirmedOther(true);
+          await verifyPayment(orderId!, txid);
+          onPaid(txid);
           return;
         }
       }
@@ -307,6 +292,7 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
       await verifyPayment(prepared.orderId, hash);
       setConfirmingOther(false);
       setConfirmedOther(true);
+      onPaid(hash);
     } catch (err) {
       setConfirmingOther(false);
       const message = err instanceof Error ? err.message : 'Pagamento cancelado ou falhou.';
@@ -348,14 +334,14 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
         {selected.network !== 'Bitcoin' && selected.network !== 'Solana' && evmAddress && <span> · {shortAddress(evmAddress)}</span>}
       </div>
 
-      {(isEvmConfirming || confirmingOther) && (
+      {confirmingOther && (
         <div className="flex items-center gap-2 text-[11px] text-[#78716c]">
           <Loader2 className="w-3.5 h-3.5 animate-spin" />
           A aguardar confirmação da blockchain…
         </div>
       )}
 
-      {(isEvmConfirmed || confirmedOther) && (
+      {confirmedOther && (
         <div className="flex items-center gap-2 text-[11px] text-emerald-700 font-semibold">
           <CheckCircle2 className="w-3.5 h-3.5" />
           Pagamento confirmado.
