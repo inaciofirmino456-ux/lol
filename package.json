@@ -30,7 +30,8 @@
     "@reown/appkit-adapter-solana": "1.8.23",
     "@reown/appkit-adapter-bitcoin": "1.8.23",
     "@solana/web3.js": "^1.98.4",
-    "@solana/spl-token": "^0.4.14"
+    "@solana/spl-token": "^0.4.14",
+    "@supabase/supabase-js": "^2.57.0"
   },
   "devDependencies": {
     "@types/canvas-confetti": "^1.9.0",
