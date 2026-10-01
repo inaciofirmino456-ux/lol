@@ -66,9 +66,11 @@ interface WalletPaymentButtonProps {
   usdAmount: number;
   onPaid: (txHash: string) => void;
   disabled?: boolean;
+  url: string;
+  categorySlug: string;
 }
 
-export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmount, onPaid, disabled = false }) => {
+export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmount, onPaid, disabled = false, url, categorySlug }) => {
   const { open } = useAppKit();
   const { address: evmAddress, isConnected: evmConnected } = useAccount();
   const { address: solAddress, isConnected: solConnected } = useAppKitAccount({ namespace: 'solana' });
@@ -85,6 +87,8 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
   const [confirmingOther, setConfirmingOther] = useState(false);
   const [confirmedOther, setConfirmedOther] = useState(false);
   const [error, setError] = useState('');
+  const [orderId, setOrderId] = useState<string>();
+  const [quote, setQuote] = useState<{expectedUnits:string; rateUsd:number; decimals:number; receivingAddress:string; token?:string|null}>();
 
   const selected = useMemo(() => PAYMENT_OPTIONS.find((o) => o.id === selectedId)!, [selectedId]);
   const { isLoading: isEvmConfirming, isSuccess: isEvmConfirmed } = useWaitForTransactionReceipt({
@@ -129,7 +133,29 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
 
   const busy = isNativePending || isTokenPending || isEvmConfirming || confirmingOther;
 
-  const handleSolanaPay = async (amount: number) => {
+  const API = 'https://fvpglbppmmexcysuumth.supabase.co/functions/v1';
+
+  const preparePayment = async () => {
+    const create = await fetch(API + '/create-order', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ url, requestedTotalUsd: usdAmount, categorySlug }) });
+    const created = await create.json();
+    if (!create.ok || !created?.orderId) throw new Error(created?.error || 'Não foi possível criar o pagamento.');
+    const instructions = await fetch(API + '/crypto-payment-instructions', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: created.orderId, network: selected.network === 'Ethereum' ? 'ethereum' : selected.network === 'Base' ? 'base' : selected.network === 'BNB Chain' ? 'bsc' : selected.network === 'Bitcoin' ? 'bitcoin' : 'solana', asset: selected.symbol }) });
+    const q = await instructions.json();
+    if (!instructions.ok || !q?.expectedUnits) throw new Error(q?.error || 'Não foi possível obter a cotação de pagamento.');
+    setOrderId(created.orderId);
+    setQuote(q);
+    return { orderId: created.orderId as string, expectedUnits: String(q.expectedUnits) };
+  };
+
+  const verifyPayment = async (id: string, hash: string) => {
+    const network = selected.network === 'Ethereum' ? 'ethereum' : selected.network === 'Base' ? 'base' : selected.network === 'BNB Chain' ? 'bsc' : selected.network === 'Bitcoin' ? 'bitcoin' : 'solana';
+    const response = await fetch(API + '/verify-crypto-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: id, network, asset: selected.symbol, txHash: hash }) });
+    const result = await response.json();
+    if (!response.ok || result?.ok !== true) throw new Error(result?.error || 'O pagamento ainda não foi confirmado pela blockchain.');
+    return result;
+  };
+
+  const handleSolanaPay = async (amount: bigint) => {
     if (!solProvider || !solAddress) {
       open({ view: 'Connect', namespace: 'solana' });
       return;
@@ -146,7 +172,7 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
       tx.add(SystemProgram.transfer({
         fromPubkey: from,
         toPubkey: to,
-        lamports: Math.floor(amount * 1_000_000_000),
+        lamports: Number(amount),
       }));
     } else {
       const mint = new PublicKey(selected.token!);
@@ -164,7 +190,7 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
         mint,
         destinationAta,
         from,
-        Math.round(amount * 10 ** selected.decimals),
+        Number(amount),
         selected.decimals,
         [],
         TOKEN_PROGRAM_ID,
@@ -191,13 +217,13 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
     setConfirmedOther(true);
   };
 
-  const handleBitcoinPay = async (amountBtc: number) => {
+  const handleBitcoinPay = async (amountBtc: bigint) => {
     if (!btcProvider || !btcAddress) {
       open({ view: 'Connect', namespace: 'bip122' });
       return;
     }
 
-    const satoshis = Math.max(1, Math.floor(amountBtc * 100_000_000));
+    const satoshis = amountBtc;
     const result = await btcProvider.request({
       method: 'sendTransfer',
       params: {
@@ -246,13 +272,16 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
 
       const amount = usdAmount / price;
 
+      const prepared = await preparePayment();
+      const expected = BigInt(prepared.expectedUnits);
+
       if (selected.kind === 'bitcoin') {
-        await handleBitcoinPay(amount);
+        await handleBitcoinPay(expected);
         return;
       }
 
       if (selected.kind === 'solNative' || selected.kind === 'solSpl') {
-        await handleSolanaPay(amount);
+        await handleSolanaPay(expected);
         return;
       }
 
@@ -262,18 +291,22 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
       if (selected.kind === 'nativeEvm') {
         hash = await sendTransactionAsync({
           to: selected.recipient as Address,
-          value: parseEther(amount.toFixed(18)),
+          value: expected,
         });
       } else {
         hash = await writeContractAsync({
           address: selected.token as Address,
           abi: ERC20_ABI,
           functionName: 'transfer',
-          args: [selected.recipient as Address, parseUnits(amount.toFixed(selected.decimals), selected.decimals)],
+          args: [selected.recipient as Address, expected],
           chainId: selected.chainId,
         });
       }
       setTxHash(hash);
+      setConfirmingOther(true);
+      await verifyPayment(prepared.orderId, hash);
+      setConfirmingOther(false);
+      setConfirmedOther(true);
     } catch (err) {
       setConfirmingOther(false);
       const message = err instanceof Error ? err.message : 'Pagamento cancelado ou falhou.';
