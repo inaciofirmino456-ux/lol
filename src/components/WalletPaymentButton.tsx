@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { CheckCircle2, Loader2, Wallet } from 'lucide-react';
-import { useAppKit } from '@reown/appkit/react';
+import { useAppKit, useAppKitAccount, useAppKitProvider } from '@reown/appkit/react';
 import {
   useAccount,
   useSendTransaction,
@@ -9,32 +9,59 @@ import {
   useWriteContract,
 } from 'wagmi';
 import { parseEther, parseUnits, type Address } from 'viem';
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+} from '@solana/web3.js';
+import {
+  createTransferCheckedInstruction,
+  getAssociatedTokenAddress,
+  TOKEN_PROGRAM_ID,
+} from '@solana/spl-token';
 
-type PaymentOption =
-  | { id: 'eth'; label: string; symbol: 'ETH'; chainId: 1; kind: 'native'; recipient: Address; decimals: 18 }
-  | { id: 'usdc-base'; label: string; symbol: 'USDC'; chainId: 8453; kind: 'erc20'; recipient: Address; token: Address; decimals: 6 }
-  | { id: 'usdt-base'; label: string; symbol: 'USDT'; chainId: 8453; kind: 'erc20'; recipient: Address; token: Address; decimals: 6 }
-  | { id: 'usdc-bsc'; label: string; symbol: 'USDC'; chainId: 56; kind: 'erc20'; recipient: Address; token: Address; decimals: 18 };
+type PaymentId = 'eth' | 'usdc-base' | 'usdt-base' | 'usdc-bsc' | 'btc' | 'btc-taproot' | 'usdc-solana' | 'usdt-solana';
+
+type PaymentOption = {
+  id: PaymentId;
+  label: string;
+  symbol: 'ETH' | 'USDC' | 'USDT' | 'BTC';
+  network: 'Ethereum' | 'Base' | 'BNB Chain' | 'Bitcoin' | 'Solana';
+  chainId?: number;
+  kind: 'nativeEvm' | 'erc20' | 'bitcoin' | 'solNative' | 'solSpl';
+  recipient: string;
+  token?: string;
+  decimals: number;
+};
+
+const EVM_RECIPIENT = '0xD86dDD14536D9F1895cD42AF168C0686d6Be2B40';
+const ETH_RECIPIENT = '0x1291637D7635Ca893465CB764e9f2AF18C910109';
+const SOL_RECIPIENT = '39phSiQkBXM64VFUSHQB7wPuyEvPqJPyGkyAKyzYnYsH';
+const BTC_RECIPIENT = 'bc1qa9fn20r8k58vqspg24qcs4tce76xkxugmufnzr';
+const BTC_TAPROOT_RECIPIENT = 'bc1paymnkfkzclz730em0d5tnz77k0kd4yp8ru2pj7vrlass76unz54qzctdcf';
 
 const PAYMENT_OPTIONS: PaymentOption[] = [
-  { id: 'eth', label: 'ETH · Ethereum', symbol: 'ETH', chainId: 1, kind: 'native', recipient: '0x1291637D7635Ca893465CB764e9f2AF18C910109', decimals: 18 },
-  { id: 'usdc-base', label: 'USDC · Base', symbol: 'USDC', chainId: 8453, kind: 'erc20', recipient: '0xD86dDD14536D9F1895cD42AF168C0686d6Be2B40', token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6 },
-  { id: 'usdt-base', label: 'USDT · Base', symbol: 'USDT', chainId: 8453, kind: 'erc20', recipient: '0xD86dDD14536D9F1895cD42AF168C0686d6Be2B40', token: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', decimals: 6 },
-  { id: 'usdc-bsc', label: 'USDC · BNB Chain', symbol: 'USDC', chainId: 56, kind: 'erc20', recipient: '0xD86dDD14536D9F1895cD42AF168C0686d6Be2B40', token: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18 },
+  { id: 'usdc-base', label: 'USDC · Base', symbol: 'USDC', network: 'Base', chainId: 8453, kind: 'erc20', recipient: EVM_RECIPIENT, token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6 },
+  { id: 'usdt-base', label: 'USDT · Base', symbol: 'USDT', network: 'Base', chainId: 8453, kind: 'erc20', recipient: EVM_RECIPIENT, token: '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2', decimals: 6 },
+  { id: 'usdc-bsc', label: 'USDC · BNB Chain', symbol: 'USDC', network: 'BNB Chain', chainId: 56, kind: 'erc20', recipient: EVM_RECIPIENT, token: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18 },
+  { id: 'eth', label: 'ETH · Ethereum', symbol: 'ETH', network: 'Ethereum', chainId: 1, kind: 'nativeEvm', recipient: ETH_RECIPIENT, decimals: 18 },
+  { id: 'usdc-solana', label: 'USDC · Solana', symbol: 'USDC', network: 'Solana', kind: 'solSpl', recipient: SOL_RECIPIENT, token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', decimals: 6 },
+  { id: 'usdt-solana', label: 'USDT · Solana', symbol: 'USDT', network: 'Solana', kind: 'solSpl', recipient: SOL_RECIPIENT, token: 'Es9vMFrzaCERmJfrF4H2FYD7qY5q7dM5wR7b1u1V7m7', decimals: 6 },
+  { id: 'btc', label: 'BTC · Bitcoin', symbol: 'BTC', network: 'Bitcoin', kind: 'bitcoin', recipient: BTC_RECIPIENT, decimals: 8 },
+  { id: 'btc-taproot', label: 'BTC · Bitcoin Taproot', symbol: 'BTC', network: 'Bitcoin', kind: 'bitcoin', recipient: BTC_TAPROOT_RECIPIENT, decimals: 8 },
 ];
 
-const ERC20_ABI = [
-  {
-    type: 'function',
-    name: 'transfer',
-    stateMutability: 'nonpayable',
-    inputs: [
-      { name: 'to', type: 'address' },
-      { name: 'amount', type: 'uint256' },
-    ],
-    outputs: [{ name: '', type: 'bool' }],
-  },
-] as const;
+const ERC20_ABI = [{
+  type: 'function',
+  name: 'transfer',
+  stateMutability: 'nonpayable',
+  inputs: [{ name: 'to', type: 'address' }, { name: 'amount', type: 'uint256' }],
+  outputs: [{ name: '', type: 'bool' }],
+}] as const;
+
+const SOLANA_RPC = 'https://api.mainnet-beta.solana.com';
+const solanaConnection = new Connection(SOLANA_RPC, 'confirmed');
 
 interface WalletPaymentButtonProps {
   usdAmount: number;
@@ -44,18 +71,25 @@ interface WalletPaymentButtonProps {
 
 export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmount, onPaid, disabled = false }) => {
   const { open } = useAppKit();
-  const { address, isConnected } = useAccount();
+  const { address: evmAddress, isConnected: evmConnected } = useAccount();
+  const { address: solAddress, isConnected: solConnected } = useAppKitAccount({ namespace: 'solana' });
+  const { address: btcAddress, isConnected: btcConnected } = useAppKitAccount({ namespace: 'bip122' });
+  const { walletProvider: solProvider } = useAppKitProvider<any>('solana');
+  const { walletProvider: btcProvider } = useAppKitProvider<any>('bip122');
   const { switchChainAsync } = useSwitchChain();
   const { sendTransactionAsync, isPending: isNativePending } = useSendTransaction();
   const { writeContractAsync, isPending: isTokenPending } = useWriteContract();
-  const [selectedId, setSelectedId] = useState<PaymentOption['id']>('usdc-base');
+
+  const [selectedId, setSelectedId] = useState<PaymentId>('usdc-base');
   const [assetUsd, setAssetUsd] = useState<Record<string, number>>({});
-  const [txHash, setTxHash] = useState<`0x${string}`>();
+  const [txHash, setTxHash] = useState<string>();
+  const [confirmingOther, setConfirmingOther] = useState(false);
+  const [confirmedOther, setConfirmedOther] = useState(false);
   const [error, setError] = useState('');
 
-  const selected = useMemo(() => PAYMENT_OPTIONS.find((option) => option.id === selectedId)!, [selectedId]);
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash: txHash,
+  const selected = useMemo(() => PAYMENT_OPTIONS.find((o) => o.id === selectedId)!, [selectedId]);
+  const { isLoading: isEvmConfirming, isSuccess: isEvmConfirmed } = useWaitForTransactionReceipt({
+    hash: txHash && txHash.startsWith('0x') ? txHash as `0x${string}` : undefined,
     chainId: selected.chainId,
   });
 
@@ -63,18 +97,17 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
     let cancelled = false;
     const loadPrices = async () => {
       try {
-        const symbols = ['ETH', 'USDC', 'USDT'];
+        const symbols = ['ETH', 'BTC', 'USDC', 'USDT'];
         const entries = await Promise.all(symbols.map(async (symbol) => {
           const response = await fetch('https://api.coinbase.com/v2/exchange-rates?currency=' + symbol);
           if (!response.ok) throw new Error('price');
           const data = await response.json();
-          const price = Number(data?.data?.rates?.USD);
-          return [symbol, price] as const;
+          return [symbol, Number(data?.data?.rates?.USD)] as const;
         }));
-        const prices = Object.fromEntries(entries.filter(([, price]) => Number.isFinite(price) && price > 0));
+        const prices = Object.fromEntries(entries.filter(([, p]) => Number.isFinite(p) && p > 0));
         if (!cancelled) setAssetUsd(prices);
       } catch {
-        // Keep the previous successful quote if the provider is temporarily unavailable.
+        // Keep the last valid quote.
       }
     };
     loadPrices();
@@ -83,80 +116,213 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
   }, []);
 
   useEffect(() => {
-    if (isConfirmed && txHash) onPaid(txHash);
-  }, [isConfirmed, txHash, onPaid]);
+    if (isEvmConfirmed && txHash) onPaid(txHash);
+  }, [isEvmConfirmed, txHash, onPaid]);
 
-  const busy = isNativePending || isTokenPending || isConfirming;
+  useEffect(() => {
+    if (confirmedOther && txHash) onPaid(txHash);
+  }, [confirmedOther, txHash, onPaid]);
+
+  const connectedForSelectedNetwork =
+    selected.kind === 'bitcoin' ? btcConnected :
+    selected.kind === 'solNative' || selected.kind === 'solSpl' ? solConnected :
+    evmConnected;
+
+  const busy = isNativePending || isTokenPending || isEvmConfirming || confirmingOther;
+
+  const handleSolanaPay = async (amount: number) => {
+    if (!solProvider || !solAddress) {
+      open({ view: 'Connect', namespace: 'solana' });
+      return;
+    }
+
+    const from = new PublicKey(solAddress);
+    const to = new PublicKey(SOL_RECIPIENT);
+    const latest = await solanaConnection.getLatestBlockhash('confirmed');
+    const tx = new Transaction();
+    tx.feePayer = from;
+    tx.recentBlockhash = latest.blockhash;
+
+    if (selected.kind === 'solNative') {
+      tx.add(SystemProgram.transfer({
+        fromPubkey: from,
+        toPubkey: to,
+        lamports: Math.floor(amount * 1_000_000_000),
+      }));
+    } else {
+      const mint = new PublicKey(selected.token!);
+      const sourceAta = await getAssociatedTokenAddress(mint, from);
+      const destinationAta = await getAssociatedTokenAddress(mint, to);
+      tx.add(createTransferCheckedInstruction(
+        sourceAta,
+        mint,
+        destinationAta,
+        from,
+        Math.round(amount * 10 ** selected.decimals),
+        selected.decimals,
+        [],
+        TOKEN_PROGRAM_ID,
+      ));
+    }
+
+    const raw = tx.serialize({ requireAllSignatures: false, verifySignatures: false });
+    const base64 = btoa(String.fromCharCode(...raw));
+    const result = await solProvider.signAndSendTransaction({
+      transaction: base64,
+      pubkey: solAddress,
+    });
+    const signature = typeof result === 'string' ? result : result?.signature;
+    if (!signature) throw new Error('A carteira não devolveu o hash da transação.');
+
+    setTxHash(signature);
+    setConfirmingOther(true);
+    await solanaConnection.confirmTransaction({
+      signature,
+      blockhash: latest.blockhash,
+      lastValidBlockHeight: latest.lastValidBlockHeight,
+    }, 'confirmed');
+    setConfirmingOther(false);
+    setConfirmedOther(true);
+  };
+
+  const handleBitcoinPay = async (amountBtc: number) => {
+    if (!btcProvider || !btcAddress) {
+      open({ view: 'Connect', namespace: 'bip122' });
+      return;
+    }
+
+    const satoshis = Math.max(1, Math.floor(amountBtc * 100_000_000));
+    const result = await btcProvider.request({
+      method: 'sendTransfer',
+      params: {
+        recipients: [{ address: selected.recipient, amount: String(satoshis) }],
+      },
+    });
+    const txid = result?.txid || result?.result?.txid;
+    if (!txid) throw new Error('A carteira não devolveu o ID da transação.');
+
+    setTxHash(txid);
+    setConfirmingOther(true);
+
+    for (let i = 0; i < 30; i++) {
+      const response = await fetch('https://blockstream.info/api/tx/' + txid + '/status');
+      if (response.ok) {
+        const status = await response.json();
+        if (status.confirmed) {
+          setConfirmingOther(false);
+          setConfirmedOther(true);
+          return;
+        }
+      }
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+
+    setConfirmingOther(false);
+    throw new Error('Transação BTC enviada, mas ainda aguarda confirmação.');
+  };
 
   const handlePay = async () => {
     setError('');
     setTxHash(undefined);
-    if (!isConnected || !address) {
-      open();
+    setConfirmedOther(false);
+
+    const price = assetUsd[selected.symbol];
+    if (!price) {
+      setError('Cotação indisponível. Tenta novamente.');
       return;
     }
 
     try {
-      await switchChainAsync({ chainId: selected.chainId });
-      let hash: `0x${string}`;
+      if (!connectedForSelectedNetwork) {
+        open({ view: 'Connect' });
+        return;
+      }
 
-      if (selected.kind === 'native') {
-        const price = assetUsd[selected.symbol];
-        if (!price) {
-          setError('Cotação indisponível. Tenta novamente.');
-          return;
-        }
-        const ethAmount = usdAmount / price;
+      const amount = usdAmount / price;
+
+      if (selected.kind === 'bitcoin') {
+        await handleBitcoinPay(amount);
+        return;
+      }
+
+      if (selected.kind === 'solNative' || selected.kind === 'solSpl') {
+        await handleSolanaPay(amount);
+        return;
+      }
+
+      await switchChainAsync({ chainId: selected.chainId! });
+
+      let hash: `0x${string}`;
+      if (selected.kind === 'nativeEvm') {
         hash = await sendTransactionAsync({
-          to: selected.recipient,
-          value: parseEther(ethAmount.toFixed(18)),
+          to: selected.recipient as Address,
+          value: parseEther(amount.toFixed(18)),
         });
       } else {
-        const price = assetUsd[selected.symbol];
-        if (!price) {
-          setError('Cotação indisponível. Tenta novamente.');
-          return;
-        }
-        const tokenAmount = parseUnits((usdAmount / price).toFixed(selected.decimals), selected.decimals);
         hash = await writeContractAsync({
-          address: selected.token,
+          address: selected.token as Address,
           abi: ERC20_ABI,
           functionName: 'transfer',
-          args: [selected.recipient, tokenAmount],
+          args: [selected.recipient as Address, parseUnits(amount.toFixed(selected.decimals), selected.decimals)],
           chainId: selected.chainId,
         });
       }
-
       setTxHash(hash);
     } catch (err) {
+      setConfirmingOther(false);
       const message = err instanceof Error ? err.message : 'Pagamento cancelado ou falhou.';
-      setError(message.length > 120 ? message.slice(0, 117) + '...' : message);
+      setError(message.length > 160 ? message.slice(0, 157) + '...' : message);
     }
   };
 
-  const shortAddress = address ? address.slice(0, 6) + '…' + address.slice(-4) : '';
+  const shortAddress = (value?: string | null) => value ? value.slice(0, 6) + '…' + value.slice(-4) : '';
 
   return (
     <div className="space-y-2">
       <div className="flex gap-2">
-        <select value={selectedId} onChange={(e) => setSelectedId(e.target.value as PaymentOption['id'])} disabled={busy || disabled}
-          className="flex-1 px-3 py-3 rounded-xl bg-white border border-[#ebdcd4] text-xs font-semibold text-[#1c1917] focus:outline-none focus:border-[#e05638]">
+        <select
+          value={selectedId}
+          onChange={(e) => setSelectedId(e.target.value as PaymentId)}
+          disabled={busy || disabled}
+          className="flex-1 px-3 py-3 rounded-xl bg-white border border-[#ebdcd4] text-xs font-semibold text-[#1c1917] focus:outline-none focus:border-[#e05638]"
+        >
           {PAYMENT_OPTIONS.map((option) => <option key={option.id} value={option.id}>{option.label}</option>)}
         </select>
-        <button type="button" onClick={handlePay} disabled={busy || disabled || usdAmount < 1}
-          className="px-4 py-3 rounded-xl bg-[#1c1917] hover:bg-black text-white font-bold text-sm disabled:opacity-50 transition-all whitespace-nowrap">
+
+        <button
+          type="button"
+          onClick={handlePay}
+          disabled={busy || disabled || usdAmount < 1}
+          className="px-4 py-3 rounded-xl bg-[#1c1917] hover:bg-black text-white font-bold text-sm disabled:opacity-50 transition-all whitespace-nowrap"
+        >
           {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Wallet className="w-4 h-4 inline mr-1.5" />}
           {busy ? 'A processar…' : 'Pagar'}
         </button>
       </div>
+
       <div className="text-[11px] text-[#78716c]">
         {assetUsd[selected.symbol]
-          ? '≈ ' + (usdAmount / assetUsd[selected.symbol]).toFixed(selected.symbol === 'ETH' ? 6 : 4) + ' ' + selected.symbol
+          ? '≈ ' + (usdAmount / assetUsd[selected.symbol]).toFixed(selected.symbol === 'BTC' ? 8 : selected.symbol === 'ETH' ? 6 : 4) + ' ' + selected.symbol
           : 'A obter cotação…'}
-        {isConnected && <span> · {shortAddress}</span>}
+        {selected.network === 'Bitcoin' && btcAddress && <span> · {shortAddress(btcAddress)}</span>}
+        {selected.network === 'Solana' && solAddress && <span> · {shortAddress(solAddress)}</span>}
+        {selected.network !== 'Bitcoin' && selected.network !== 'Solana' && evmAddress && <span> · {shortAddress(evmAddress)}</span>}
       </div>
-      {isConfirming && <div className="flex items-center gap-2 text-[11px] text-[#78716c]"><Loader2 className="w-3.5 h-3.5 animate-spin" />A aguardar confirmação da blockchain…</div>}
-      {isConfirmed && <div className="flex items-center gap-2 text-[11px] text-emerald-700 font-semibold"><CheckCircle2 className="w-3.5 h-3.5" />Pagamento confirmado.</div>}
+
+      {(isEvmConfirming || confirmingOther) && (
+        <div className="flex items-center gap-2 text-[11px] text-[#78716c]">
+          <Loader2 className="w-3.5 h-3.5 animate-spin" />
+          A aguardar confirmação da blockchain…
+        </div>
+      )}
+
+      {(isEvmConfirmed || confirmedOther) && (
+        <div className="flex items-center gap-2 text-[11px] text-emerald-700 font-semibold">
+          <CheckCircle2 className="w-3.5 h-3.5" />
+          Pagamento confirmado.
+        </div>
+      )}
+
       {error && <div className="text-[11px] text-red-600 break-words">{error}</div>}
     </div>
   );
