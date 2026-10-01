@@ -243,6 +243,7 @@ export const WalletPaymentButton:React.FC<Props>=({usdAmount,onPaid,disabled=fal
       {balanceError&&<button type="button" onClick={loadBalances} className="text-[11px] text-[#e05638] font-bold underline">Tentar de novo</button>}
     </div>
     {debug&&<div className="rounded-xl bg-slate-950 text-white p-3 text-[10px] leading-4 break-all space-y-1"><div className="font-black text-xs">Diagnóstico</div><div>Carteira ligada: {connectedForSelected?'sim':'não'}</div><div>EVM: {evmAddress||'—'}</div><div>Solana: {solAddress||'—'}</div><div>Bitcoin: {btcAddress||'—'}</div><div>chainId: {chainId??'—'}</div><div>RPC: {balanceRpc||'—'}</div><div>Estado saldo: {balanceLoading?'carregando':balanceError?'erro':'ok'}</div><div>Resposta/erro: {balanceRaw||balanceError||'—'}</div><div>Última atualização: {balanceUpdatedAt||'—'}</div></div>}
+    }
 
     <div className="text-[11px] text-[#78716c]">{assetUsd[selected.symbol]?'≈ '+(usdAmount/assetUsd[selected.symbol]).toFixed(selected.symbol==='BTC'?8:selected.symbol==='ETH'?6:4)+' '+selected.symbol:'A obter cotação…'}</div>
     {paymentState!=='idle'&&<div className="text-[11px] font-semibold text-[#57534e]">Estado: {paymentState==='waiting'?'à espera':paymentState==='confirming'?'a confirmar':paymentState==='confirmed'?'confirmado':'no ranking'}</div>}
