@@ -1,12 +1,15 @@
 import { createAppKit } from '@reown/appkit/react';
 import { WagmiAdapter } from '@reown/appkit-adapter-wagmi';
-import { bsc, mainnet, base } from '@reown/appkit/networks';
+import { SolanaAdapter } from '@reown/appkit-adapter-solana/react';
+import { BitcoinAdapter } from '@reown/appkit-adapter-bitcoin';
+import { bsc, mainnet, base, solana, bitcoin } from '@reown/appkit/networks';
 
 export const projectId =
   import.meta.env.VITE_REOWN_PROJECT_ID ||
   '52b71fb9a45b4c8184c75d946b0839d5';
 
-export const networks = [mainnet, base, bsc] as const;
+export const evmNetworks = [mainnet, base, bsc] as const;
+export const networks = [mainnet, base, bsc, solana, bitcoin] as const;
 
 export const metadata = {
   name: 'TopBid',
@@ -15,12 +18,18 @@ export const metadata = {
 };
 
 export const wagmiAdapter = new WagmiAdapter({
-  networks: [...networks],
+  networks: [...evmNetworks],
+  projectId,
+});
+
+export const solanaAdapter = new SolanaAdapter({});
+export const bitcoinAdapter = new BitcoinAdapter({
+  networks: [bitcoin],
   projectId,
 });
 
 createAppKit({
-  adapters: [wagmiAdapter],
+  adapters: [wagmiAdapter, solanaAdapter, bitcoinAdapter],
   networks: [...networks],
   projectId,
   metadata,
