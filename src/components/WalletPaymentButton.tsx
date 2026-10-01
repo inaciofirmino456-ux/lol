@@ -130,10 +130,16 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
 
   const verifyPayment = async (id: string, hash: string) => {
     const network = selected.network === 'Ethereum' ? 'ethereum' : selected.network === 'Base' ? 'base' : selected.network === 'BNB Chain' ? 'bsc' : selected.network === 'Bitcoin' ? 'bitcoin' : 'solana';
-    const response = await fetch(API + '/verify-crypto-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: id, network, asset: selected.symbol, txHash: hash }) });
-    const result = await response.json();
-    if (!response.ok || result?.ok !== true) throw new Error(result?.error || 'O pagamento ainda não foi confirmado pela blockchain.');
-    return result;
+    let lastError = 'O pagamento ainda não foi confirmado pela blockchain.';
+    for (let attempt = 0; attempt < 36; attempt++) {
+      const response = await fetch(API + '/verify-crypto-payment', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ orderId: id, network, asset: selected.symbol, txHash: hash }) });
+      const result = await response.json();
+      if (response.ok && result?.ok === true) return result;
+      lastError = result?.error || lastError;
+      if (!['INSUFFICIENT_CONFIRMATIONS', 'TRANSACTION_NOT_CONFIRMED', 'SOLANA_TRANSACTION_NOT_CONFIRMED', 'BTC_TRANSACTION_NOT_FOUND'].includes(lastError)) break;
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+    throw new Error(lastError);
   };
 
   const handleSolanaPay = async (amount: bigint, paymentOrderId: string) => {
