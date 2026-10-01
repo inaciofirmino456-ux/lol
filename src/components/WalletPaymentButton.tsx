@@ -128,7 +128,7 @@ export const WalletPaymentButton:React.FC<Props>=({usdAmount,onPaid,disabled=fal
     try{
       if(selected.network==='Bitcoin'){
         const r=await fetch('https://blockstream.info/api/address/'+encodeURIComponent(address));const j=await r.json();
-        setBalances([('BTC '+((Number(j?.chain_stats?.funded_txo_sum||0)-Number(j?.chain_stats?.spent_txo_sum||0))/1e8).toFixed(8)]);
+        setBalances(['BTC '+((Number(j?.chain_stats?.funded_txo_sum||0)-Number(j?.chain_stats?.spent_txo_sum||0))/1e8).toFixed(8)]);
       }else if(selected.network==='Solana'){
         const owner=new PublicKey(address);const lamports=await solanaConnection.getBalance(owner);
         const token=selected.token?await solanaConnection.getParsedTokenAccountsByOwner(owner,{mint:new PublicKey(selected.token)}):null;
