@@ -23,6 +23,8 @@ export interface Listing {
   createdAt: number; // timestamp
   badge?: string;
   isUserCreated?: boolean;
+  image?: string;
+  favicon?: string;
 }
 
 export interface ActivityEvent {
