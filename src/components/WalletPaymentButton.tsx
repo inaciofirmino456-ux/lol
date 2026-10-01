@@ -22,7 +22,7 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 
-type PaymentId = 'eth' | 'usdc-base' | 'usdt-base' | 'usdc-bsc' | 'btc' | 'btc-taproot' | 'usdc-solana' | 'usdt-solana';
+type PaymentId = 'eth' | 'usdc-base' | 'usdt-base' | 'usdc-bsc' | 'btc' | 'usdc-solana' | 'usdt-solana';
 
 type PaymentOption = {
   id: PaymentId;
@@ -40,7 +40,6 @@ const EVM_RECIPIENT = '0xD86dDD14536D9F1895cD42AF168C0686d6Be2B40';
 const ETH_RECIPIENT = '0x1291637D7635Ca893465CB764e9f2AF18C910109';
 const SOL_RECIPIENT = '39phSiQkBXM64VFUSHQB7wPuyEvPqJPyGkyAKyzYnYsH';
 const BTC_RECIPIENT = 'bc1qa9fn20r8k58vqspg24qcs4tce76xkxugmufnzr';
-const BTC_TAPROOT_RECIPIENT = 'bc1paymnkfkzclz730em0d5tnz77k0kd4yp8ru2pj7vrlass76unz54qzctdcf';
 
 const PAYMENT_OPTIONS: PaymentOption[] = [
   { id: 'usdc-base', label: 'USDC · Base', symbol: 'USDC', network: 'Base', chainId: 8453, kind: 'erc20', recipient: EVM_RECIPIENT, token: '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913', decimals: 6 },
@@ -50,7 +49,6 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
   { id: 'usdc-solana', label: 'USDC · Solana', symbol: 'USDC', network: 'Solana', kind: 'solSpl', recipient: SOL_RECIPIENT, token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', decimals: 6 },
   { id: 'usdt-solana', label: 'USDT · Solana', symbol: 'USDT', network: 'Solana', kind: 'solSpl', recipient: SOL_RECIPIENT, token: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', decimals: 6 },
   { id: 'btc', label: 'BTC · Bitcoin', symbol: 'BTC', network: 'Bitcoin', kind: 'bitcoin', recipient: BTC_RECIPIENT, decimals: 8 },
-  { id: 'btc-taproot', label: 'BTC · Bitcoin Taproot', symbol: 'BTC', network: 'Bitcoin', kind: 'bitcoin', recipient: BTC_TAPROOT_RECIPIENT, decimals: 8 },
 ];
 
 const ERC20_ABI = [{
