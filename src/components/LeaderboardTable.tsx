@@ -100,8 +100,12 @@ export const LeaderboardTable: React.FC<LeaderboardTableProps> = ({
           >
             <div className="flex items-start gap-3.5">
               {/* Left icon with clean outline style */}
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/90 border border-[#f5ded2] flex items-center justify-center shrink-0 shadow-xs">
-                {renderIcon()}
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-white/90 border border-[#f5ded2] flex items-center justify-center shrink-0 shadow-xs overflow-hidden">
+                {item.image ? (
+                  <img src={item.image} alt="" className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                ) : item.favicon ? (
+                  <img src={item.favicon} alt="" className="w-7 h-7" onError={(e) => { e.currentTarget.style.display = 'none'; }} />
+                ) : renderIcon()}
               </div>
 
               {/* Center / Right content */}
