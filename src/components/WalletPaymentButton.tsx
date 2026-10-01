@@ -136,7 +136,8 @@ export const WalletPaymentButton:React.FC<Props>=({usdAmount,onPaid,disabled=fal
         setBalances(['SOL '+(lamports/1e9).toFixed(5),selected.symbol+' '+amount.toFixed(4)]);
       }else{
         const rpc=RPC[selected.network];
-        const native=await (await fetch(rpc,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_getBalance',params:[address,'latest']])})).json();
+        const nativeResponse=await fetch(rpc,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({jsonrpc:'2.0',id:1,method:'eth_getBalance',params:[address,'latest']})});
+        const native=await nativeResponse.json();
         const nativeName=selected.network==='BNB Chain'?'BNB':'ETH';
         const vals=[nativeName+' '+(Number(BigInt(native.result||'0x0'))/1e18).toFixed(5)];
         for(const opt of PAYMENT_OPTIONS.filter(o=>o.network===selected.network&&o.kind==='erc20')){
