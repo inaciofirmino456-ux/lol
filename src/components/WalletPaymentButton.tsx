@@ -112,7 +112,7 @@ export const WalletPaymentButton:React.FC<Props>=({usdAmount,onPaid,disabled=fal
 
   useEffect(()=>{
     if(!connecting)return;
-    const t=window.setTimeout(()=>{setConnecting(false);setShowFallback(true);setError('A ligação demorou mais de 15 segundos. Tenta novamente ou paga por QR/endereço.');},15000);
+    const t=window.setTimeout(async()=>{setConnecting(false);setError('A ligação demorou mais de 15 segundos. Tenta novamente ou paga por QR/endereço.'); try { await preparePayment(); setShowFallback(true); } catch (e) { setShowFallback(false); await logWalletError(e instanceof Error?e.message:'Não foi possível preparar o QR','qr_fallback'); }},15000);
     return()=>clearTimeout(t);
   },[connecting]);
 
