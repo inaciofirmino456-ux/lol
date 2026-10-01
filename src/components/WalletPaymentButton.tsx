@@ -17,6 +17,7 @@ import {
 } from '@solana/web3.js';
 import {
   createTransferCheckedInstruction,
+  createAssociatedTokenAccountIdempotentInstruction,
   getAssociatedTokenAddress,
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
@@ -47,7 +48,7 @@ const PAYMENT_OPTIONS: PaymentOption[] = [
   { id: 'usdc-bsc', label: 'USDC · BNB Chain', symbol: 'USDC', network: 'BNB Chain', chainId: 56, kind: 'erc20', recipient: EVM_RECIPIENT, token: '0x8AC76a51cc950d9822D68b83fE1Ad97B32Cd580d', decimals: 18 },
   { id: 'eth', label: 'ETH · Ethereum', symbol: 'ETH', network: 'Ethereum', chainId: 1, kind: 'nativeEvm', recipient: ETH_RECIPIENT, decimals: 18 },
   { id: 'usdc-solana', label: 'USDC · Solana', symbol: 'USDC', network: 'Solana', kind: 'solSpl', recipient: SOL_RECIPIENT, token: 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v', decimals: 6 },
-  { id: 'usdt-solana', label: 'USDT · Solana', symbol: 'USDT', network: 'Solana', kind: 'solSpl', recipient: SOL_RECIPIENT, token: 'Es9vMFrzaCERmJfrF4H2FYD7qY5q7dM5wR7b1u1V7m7', decimals: 6 },
+  { id: 'usdt-solana', label: 'USDT · Solana', symbol: 'USDT', network: 'Solana', kind: 'solSpl', recipient: SOL_RECIPIENT, token: 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB', decimals: 6 },
   { id: 'btc', label: 'BTC · Bitcoin', symbol: 'BTC', network: 'Bitcoin', kind: 'bitcoin', recipient: BTC_RECIPIENT, decimals: 8 },
   { id: 'btc-taproot', label: 'BTC · Bitcoin Taproot', symbol: 'BTC', network: 'Bitcoin', kind: 'bitcoin', recipient: BTC_TAPROOT_RECIPIENT, decimals: 8 },
 ];
@@ -153,6 +154,13 @@ export const WalletPaymentButton: React.FC<WalletPaymentButtonProps> = ({ usdAmo
       const mint = new PublicKey(selected.token!);
       const sourceAta = await getAssociatedTokenAddress(mint, from);
       const destinationAta = await getAssociatedTokenAddress(mint, to);
+      tx.add(createAssociatedTokenAccountIdempotentInstruction(
+        from,
+        destinationAta,
+        to,
+        mint,
+        TOKEN_PROGRAM_ID,
+      ));
       tx.add(createTransferCheckedInstruction(
         sourceAta,
         mint,
