@@ -4,9 +4,8 @@ import { SolanaAdapter } from '@reown/appkit-adapter-solana/react';
 import { BitcoinAdapter } from '@reown/appkit-adapter-bitcoin';
 import { bsc, mainnet, base, solana, bitcoin } from '@reown/appkit/networks';
 
-export const projectId =
-  import.meta.env.VITE_REOWN_PROJECT_ID ||
-  '52b71fb9a45b4c8184c75d946b0839d5';
+export const projectId = import.meta.env.VITE_REOWN_PROJECT_ID;
+if (!projectId) throw new Error('VITE_REOWN_PROJECT_ID não configurado.');
 
 export const evmNetworks = [mainnet, base, bsc] as const;
 export const networks = [mainnet, base, bsc, solana, bitcoin] as const;
