@@ -242,7 +242,7 @@ export const WalletPaymentButton:React.FC<Props>=({usdAmount,onPaid,disabled=fal
       {supportedEvm&&!selectedChainSupported&&<button type="button" onClick={async()=>{try{await switchChainAsync({chainId:selected.chainId!})}catch(e){const m=e instanceof Error?e.message:'Falha ao trocar de rede';setError(m);await logWalletError(m,'switch_chain')}}} className="w-full rounded-lg bg-[#1c1917] text-white text-[11px] font-bold py-2">Muda para {selected.network}</button>}
       <div className="flex items-center justify-between gap-2 text-[11px] text-[#78716c]"><span>{balanceLoading?'A atualizar saldo…':balanceError?'Erro: '+balanceError:balances.length?balances.join(' · '):'Saldo indisponível'}</span><button type="button" onClick={loadBalances} className="p-1 rounded hover:bg-[#f3eae4]" title="Atualizar"><RefreshCw className="w-3 h-3"/></button></div>
       {balanceError&&<button type="button" onClick={loadBalances} className="text-[11px] text-[#e05638] font-bold underline">Tentar de novo</button>}
-    </div>
+    </div>}
     <WalletDebugPanel debug={debug} connected={connectedForSelected} evmAddress={evmAddress} solAddress={solAddress} btcAddress={btcAddress} chainId={chainId} rpc={balanceRpc} loading={balanceLoading} error={balanceError} raw={balanceRaw} updatedAt={balanceUpdatedAt} />
 
     <div className="text-[11px] text-[#78716c]">{assetUsd[selected.symbol]?'≈ '+(usdAmount/assetUsd[selected.symbol]).toFixed(selected.symbol==='BTC'?8:selected.symbol==='ETH'?6:4)+' '+selected.symbol:'A obter cotação…'}</div>
