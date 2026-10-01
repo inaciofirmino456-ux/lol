@@ -34,6 +34,8 @@ export const OutbidModal: React.FC<OutbidModalProps> = ({
   const [bidAmount, setBidAmount] = useState<number>(10);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [preview, setPreview] = useState<{image?: string; favicon?: string; title?: string; description?: string}>({});
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   // Top listing bid
   const topBid = currentListings.length > 0 ? Math.max(...currentListings.map(l => l.bid)) : 0;
@@ -80,11 +82,39 @@ export const OutbidModal: React.FC<OutbidModalProps> = ({
           const capitalized = domainName.charAt(0).toUpperCase() + domainName.slice(1);
           if (!name) setName(capitalized);
         }
-      } catch {
-        // ignore parsing
-      }
+      } catch {}
     }
   };
+
+  useEffect(() => {
+    if (!url.trim() || url.trim().length < 6 || url.trim().startsWith('@')) {
+      setPreview({});
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      setPreviewLoading(true);
+      try {
+        const response = await fetch('https://fvpglbppmmexcysuumth.supabase.co/functions/v1/preview-url', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({url}),
+          signal: controller.signal,
+        });
+        const data = await response.json();
+        if (response.ok && data?.valid) {
+          setPreview(data);
+          if (!targetListing) {
+            if (data.title) setName(data.title.slice(0, 90));
+            if (data.description) setTagline(data.description.slice(0, 90));
+          }
+        }
+      } catch {} finally {
+        if (!controller.signal.aborted) setPreviewLoading(false);
+      }
+    }, 500);
+    return () => { controller.abort(); window.clearTimeout(timer); };
+  }, [url, targetListing]);
 
   const calculateEstimatedRank = (amount: number): number => {
     if (targetListing) {
@@ -134,6 +164,8 @@ export const OutbidModal: React.FC<OutbidModalProps> = ({
           url: url.startsWith('http') || url.startsWith('@') ? url : `https://${url}`,
           category,
           icon,
+          image: preview.image,
+          favicon: preview.favicon,
           bid: bidAmount,
           todayBid: bidAmount,
         },
@@ -242,6 +274,16 @@ export const OutbidModal: React.FC<OutbidModalProps> = ({
                 />
               </div>
             </div>
+
+            {previewLoading && <div className="text-[11px] text-[#78716c]">A carregar pré-visualização…</div>}
+            {(preview.image || preview.favicon || preview.title) && (
+              <div className="rounded-2xl bg-white border border-[#ebdcd4] p-3 flex gap-3 items-center">
+                <div className="w-16 h-16 rounded-xl overflow-hidden bg-[#f8f3ef] border border-[#f3eae4] shrink-0 flex items-center justify-center">
+                  {preview.image ? <img src={preview.image} alt="" className="w-full h-full object-cover" onError={(e)=>{e.currentTarget.style.display='none'}}/> : preview.favicon ? <img src={preview.favicon} alt="" className="w-8 h-8" /> : <span className="text-xl font-black text-[#e05638]">{(preview.title || name || '?').slice(0,2).toUpperCase()}</span>}
+                </div>
+                <div className="min-w-0"><div className="font-bold text-sm truncate">{preview.title || name}</div><div className="text-xs text-[#78716c] line-clamp-2">{preview.description || tagline}</div></div>
+              </div>
+            )}
 
             {/* Name & Tagline */}
             <div>
