@@ -1,9 +1,4 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- */
-
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Header } from './components/Header';
 import { LiveTicker } from './components/LiveTicker';
 import { Hero } from './components/Hero';
@@ -12,124 +7,101 @@ import { LeaderboardTable } from './components/LeaderboardTable';
 import { OutbidModal } from './components/OutbidModal';
 import { RulesModal } from './components/RulesModal';
 import { Footer } from './components/Footer';
-import { INITIAL_LISTINGS, INITIAL_ACTIVITIES } from './data/initialListings';
 import { Listing, Category, ActivityEvent } from './types';
 import { soundFX } from './utils/audio';
-
-const STORAGE_LISTINGS_KEY = 'topbid_v6_listings';
-const STORAGE_ACTIVITIES_KEY = 'topbid_v6_activities';
+import { supabase } from './lib/supabase';
 
 const ALL_CATEGORIES: Category[] = [
-  'All',
-  'AI & Agents',
-  'Marketing & SEO',
-  'Developer Tools',
-  'SaaS & Productivity',
-  'Design & Creative',
-  'Crypto & Web3',
-  'Side Projects'
+  'All','AI & Agents','Marketing & SEO','Developer Tools','SaaS & Productivity',
+  'Design & Creative','X / Twitter Profiles','Crypto & Web3','Side Projects'
 ];
 
+const categoryFromName = (value: string | undefined): Category => {
+  const allowed = ALL_CATEGORIES as string[];
+  return allowed.includes(value || '') ? (value as Category) : 'Side Projects';
+};
+
 export default function App() {
-  const [listings, setListings] = useState<Listing[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(STORAGE_LISTINGS_KEY);
-        if (saved) return JSON.parse(saved);
-      } catch (err) {
-        console.error('Failed to load listings', err);
-      }
-    }
-    return INITIAL_LISTINGS;
-  });
-
-  const [activities, setActivities] = useState<ActivityEvent[]>(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const saved = localStorage.getItem(STORAGE_ACTIVITIES_KEY);
-        if (saved) return JSON.parse(saved);
-      } catch (err) {
-        console.error('Failed to load activities', err);
-      }
-    }
-    return INITIAL_ACTIVITIES;
-  });
-
+  const [listings, setListings] = useState<Listing[]>([]);
+  const [activities, setActivities] = useState<ActivityEvent[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [activeNavTab, setActiveNavTab] = useState('all');
-  const [timeframe, setTimeframe] = useState<'all' | 'today'>('all');
   const [selectedCategory, setSelectedCategory] = useState<Category>('All');
   const [searchQuery, setSearchQuery] = useState('');
-
   const [isSubmitModalOpen, setIsSubmitModalOpen] = useState(false);
   const [targetListingForOutbid, setTargetListingForOutbid] = useState<Listing | null>(null);
   const [isRulesModalOpen, setIsRulesModalOpen] = useState(false);
   const [isExploreOpen, setIsExploreOpen] = useState(false);
   const [quickClaimUrl, setQuickClaimUrl] = useState('');
-  const [quickClaimBid, setQuickClaimBid] = useState<number | undefined>(undefined);
+  const [quickClaimBid, setQuickClaimBid] = useState<number | undefined>();
+
+  const loadListings = async () => {
+    if (!supabase) {
+      setLoadError('Supabase não está configurado.');
+      setLoading(false);
+      return;
+    }
+    setLoadError('');
+    try {
+      const { data, error } = await supabase
+        .from('listings')
+        .select('id, normalized_url, canonical_url, title, description, category_id, total_paid_cents, created_at, clicks, image_url, favicon_url, status, categories(name, slug)')
+        .eq('status', 'active')
+        .order('total_paid_cents', { ascending: false })
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      const mapped: Listing[] = (data || []).map((row: any) => ({
+        id: row.id,
+        name: row.title || row.normalized_url || 'Untitled',
+        tagline: row.description || '',
+        url: row.canonical_url || row.normalized_url || '',
+        category: categoryFromName(row.categories?.name),
+        bid: Number(row.total_paid_cents || 0) / 100,
+        todayBid: Number(row.total_paid_cents || 0) / 100,
+        clicks: Number(row.clicks || 0),
+        createdAt: new Date(row.created_at).getTime(),
+        image: row.image_url || undefined,
+        favicon: row.favicon_url || undefined,
+        isUserCreated: true,
+      }));
+      setListings(mapped);
+    } catch (error) {
+      console.error(error);
+      setLoadError('Não foi possível carregar o ranking real.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_LISTINGS_KEY, JSON.stringify(listings));
-    } catch {
-      // ignore
-    }
-  }, [listings]);
+    loadListings();
+    if (!supabase) return;
+    const channel = supabase.channel('topbid-live-ranking')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'listings' }, () => loadListings())
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_ACTIVITIES_KEY, JSON.stringify(activities));
-    } catch {
-      // ignore
-    }
-  }, [activities]);
+  const totalVolume = useMemo(() => listings.reduce((sum, item) => sum + item.bid, 0), [listings]);
+  const totalClicks = useMemo(() => listings.reduce((sum, item) => sum + item.clicks, 0), [listings]);
+  const topListingBid = useMemo(() => listings.length ? Math.max(...listings.map(item => item.bid)) : 0, [listings]);
 
-
-  const totalVolume = useMemo(() => {
-    return listings.reduce((sum, item) => sum + item.bid, 0);
-  }, [listings]);
-
-  const totalClicks = useMemo(() => {
-    return listings.reduce((sum, item) => sum + item.clicks, 0);
-  }, [listings]);
-
-  const topListingBid = useMemo(() => {
-    if (listings.length === 0) return 0;
-    return Math.max(...listings.map((item) => (timeframe === 'today' ? item.todayBid : item.bid)));
-  }, [listings, timeframe]);
-
-  // Filter and sort listings
   const filteredAndSortedListings = useMemo(() => {
     let result = [...listings];
-
-    if (selectedCategory !== 'All') {
-      result = result.filter((item) => item.category === selectedCategory);
-    }
-
+    if (selectedCategory !== 'All') result = result.filter(item => item.category === selectedCategory);
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (item) =>
-          item.name.toLowerCase().includes(q) ||
-          item.tagline.toLowerCase().includes(q) ||
-          item.url.toLowerCase().includes(q) ||
-          item.category.toLowerCase().includes(q)
-      );
+      result = result.filter(item => item.name.toLowerCase().includes(q) || item.tagline.toLowerCase().includes(q) || item.url.toLowerCase().includes(q) || item.category.toLowerCase().includes(q));
     }
+    return result.sort((a,b) => b.bid !== a.bid ? b.bid - a.bid : a.createdAt - b.createdAt);
+  }, [listings, selectedCategory, searchQuery]);
 
-    result.sort((a, b) => {
-      const bidA = timeframe === 'today' ? a.todayBid : a.bid;
-      const bidB = timeframe === 'today' ? b.todayBid : b.bid;
-      if (bidB !== bidA) return bidB - bidA;
-      return a.createdAt - b.createdAt;
-    });
-
-    return result;
-  }, [listings, selectedCategory, searchQuery, timeframe]);
-
-  const handleListingClick = (listing: Listing) => {
-    setListings((prev) =>
-      prev.map((item) => (item.id === listing.id ? { ...item, clicks: item.clicks + 1 } : item))
-    );
+  const handleListingClick = async (listing: Listing) => {
+    if (supabase) {
+      await supabase.from('click_events').insert({ listing_id: listing.id, is_bot: false });
+    }
+    setListings(prev => prev.map(item => item.id === listing.id ? { ...item, clicks: item.clicks + 1 } : item));
   };
 
   const handleOutbidListing = (listing: Listing) => {
@@ -154,108 +126,35 @@ export default function App() {
     setIsSubmitModalOpen(true);
   };
 
-  const handleSuccessfulBid = (
-    data: Partial<Listing>,
-    amount: number,
-    isExistingId?: string
-  ) => {
-    if (isExistingId) {
-      setListings((prev) =>
-        prev.map((item) => {
-          if (item.id === isExistingId) {
-            return {
-              ...item,
-              bid: Math.max(item.bid, amount),
-              todayBid: Math.max(item.todayBid, amount),
-              tagline: data.tagline || item.tagline,
-              name: data.name || item.name,
-              category: data.category || item.category,
-              icon: data.icon || item.icon,
-            };
-          }
-          return item;
-        })
-      );
-
-      const target = listings.find((l) => l.id === isExistingId);
-      const name = target ? target.name : 'Listing';
-      const newActivity: ActivityEvent = {
-        id: `act-${Date.now()}`,
-        text: `${name} raised bid to $${amount.toLocaleString()}!`,
-        timestamp: 'Just now',
-        amount,
-        type: 'raise',
-      };
-      setActivities((prev) => [newActivity, ...prev.slice(0, 9)]);
-    } else {
-      const newListing: Listing = {
-        id: `user-${Date.now()}`,
-        name: data.name || 'Untitled Project',
-        tagline: data.tagline || 'Innovative platform built for the future.',
-        url: data.url || 'https://example.com',
-        category: data.category || 'AI & Agents',
-        bid: amount,
-        todayBid: amount,
-        clicks: 1,
-        icon: data.icon || '⚡',
-        createdAt: Date.now(),
-        isUserCreated: true,
-      };
-
-      setListings((prev) => [newListing, ...prev]);
-
-      const newActivity: ActivityEvent = {
-        id: `act-${Date.now()}`,
-        text: `${newListing.name} claimed rank with $${amount.toLocaleString()}!`,
-        timestamp: 'Just now',
-        amount,
-        type: 'new',
-      };
-      setActivities((prev) => [newActivity, ...prev.slice(0, 9)]);
-    }
+  const handleSuccessfulBid = async () => {
+    setIsSubmitModalOpen(false);
+    setActivities([]);
+    await loadListings();
   };
 
-  const handleResetData = () => {
-    localStorage.removeItem(STORAGE_LISTINGS_KEY);
-    localStorage.removeItem(STORAGE_ACTIVITIES_KEY);
-    setListings(INITIAL_LISTINGS);
-    setActivities(INITIAL_ACTIVITIES);
-    setSelectedCategory('All');
-    setSearchQuery('');
-  };
+  const filteredActivities = activities;
 
   return (
     <div className="min-h-screen bg-[#faf6f3] text-[#1c1917] flex flex-col font-sans selection:bg-[#e05638]/20 selection:text-[#e05638]">
-      {/* Header with stepped logo */}
       <Header
         onOpenRules={() => setIsRulesModalOpen(true)}
-        onOpenDaily={() => setTimeframe('today')}
+        onOpenDaily={() => undefined}
         onOpenCategories={() => document.getElementById('leaderboard-filter')?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
       />
 
-      {/* Real activity only: this remains empty until real users submit bids. */}
-      <LiveTicker
-        activities={activities}
-        onSelectOutbid={(name) => {
-          const match = listings.find((l) => l.name.toLowerCase() === name.toLowerCase());
-          if (match) {
-            handleOutbidListing(match);
-          } else {
-            handleOpenSubmit();
-          }
-        }}
-      />
+      <LiveTicker activities={filteredActivities} onSelectOutbid={(name) => {
+        const match = listings.find(l => l.name.toLowerCase() === name.toLowerCase());
+        if (match) handleOutbidListing(match); else handleOpenSubmit();
+      }} />
 
-      {/* Main Container */}
       <main className="flex-1">
-        {/* Exact Hero Section from Screenshot with Statistics Cards */}
         <Hero
           topListingBid={topListingBid}
           totalVolume={totalVolume}
           totalClicks={totalClicks}
           totalListingsCount={listings.length}
-          timeframe={timeframe}
-          onChangeTimeframe={setTimeframe}
+          timeframe="all"
+          onChangeTimeframe={() => undefined}
           onQuickClaim={handleQuickClaim}
           selectedCategory={selectedCategory}
           onChangeCategory={setSelectedCategory}
@@ -264,58 +163,38 @@ export default function App() {
           onOpenExplore={() => setIsExploreOpen(true)}
         />
 
-        {/* Categories & Search Filter */}
+        {loadError && <div className="mx-auto max-w-xl px-4 pb-3 text-center text-sm font-semibold text-[#c2412d]">{loadError}</div>}
+        {loading && <div className="mx-auto max-w-xl px-4 pb-6 text-center text-sm text-[#78716c]">A carregar o ranking real…</div>}
+
         <div id="leaderboard-filter">
-        <FilterBar
-          selectedCategory={selectedCategory}
-          onChangeCategory={setSelectedCategory}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          categories={ALL_CATEGORIES}
-        />
+          <FilterBar selectedCategory={selectedCategory} onChangeCategory={setSelectedCategory} searchQuery={searchQuery} onSearchChange={setSearchQuery} categories={ALL_CATEGORIES} />
         </div>
 
-        {/* Exact Peach Cards from Screenshot */}
-        <LeaderboardTable
-          listings={filteredAndSortedListings}
-          onOutbidListing={handleOutbidListing}
-          onListingClick={handleListingClick}
-          isTodayView={timeframe === 'today'}
-        />
+        <LeaderboardTable listings={filteredAndSortedListings} onOutbidListing={handleOutbidListing} onListingClick={handleListingClick} isTodayView={false} />
       </main>
 
-      {/* Footer */}
       {isExploreOpen && (
         <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm p-4 flex items-center justify-center" onClick={() => setIsExploreOpen(false)}>
-          <div className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl bg-[#faf6f3] border border-[#ebdcd4] shadow-2xl p-5" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-2xl max-h-[85vh] overflow-y-auto rounded-3xl bg-[#faf6f3] border border-[#ebdcd4] shadow-2xl p-5" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between gap-3 mb-5">
-              <div><h2 className="text-xl font-black text-[#1c1917]">Explore</h2><p className="text-xs text-[#78716c] mt-1">See each category and who is leading it.</p></div>
+              <div><h2 className="text-xl font-black">Explore</h2><p className="text-xs text-[#78716c] mt-1">See each category and who is leading it.</p></div>
               <button type="button" onClick={() => setIsExploreOpen(false)} className="px-3 py-1.5 rounded-full bg-[#f3eae4] text-xs font-bold text-[#57534e]">Close</button>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              {ALL_CATEGORIES.filter((cat) => cat !== 'All').map((cat) => {
-                const categoryListings = listings.filter((item) => item.category === cat).sort((a,b) => b.bid-a.bid);
-                const leader = categoryListings[0];
-                return (
-                  <button key={cat} type="button" onClick={() => { setSelectedCategory(cat); setIsExploreOpen(false); window.scrollTo({top: 0, behavior: 'smooth'}); }} className="text-left p-4 rounded-2xl bg-white border border-[#ebdcd4] hover:border-[#e05638] transition-colors">
-                    <div className="text-[10px] uppercase tracking-wider font-bold text-[#a8a29e]">{cat}</div>
-                    {leader ? (
-                      <div className="mt-2"><div className="font-bold text-[#1c1917] truncate">#1 {leader.name}</div><div className="text-xs text-[#e05638] font-mono mt-1">${leader.bid.toLocaleString()}</div></div>
-                    ) : null}
-                  </button>
-                );
+              {ALL_CATEGORIES.filter(cat => cat !== 'All').map(cat => {
+                const leader = listings.filter(item => item.category === cat).sort((a,b) => b.bid-a.bid)[0];
+                return <button key={cat} type="button" onClick={() => { setSelectedCategory(cat); setIsExploreOpen(false); window.scrollTo({top:0,behavior:'smooth'}); }} className="text-left p-4 rounded-2xl bg-white border border-[#ebdcd4] hover:border-[#e05638] transition-colors">
+                  <div className="text-[10px] uppercase tracking-wider font-bold text-[#a8a29e]">{cat}</div>
+                  {leader && <div className="mt-2"><div className="font-bold truncate">#1 {leader.name}</div><div className="text-xs text-[#e05638] font-mono mt-1">${leader.bid.toLocaleString()}</div></div>}
+                </button>;
               })}
             </div>
           </div>
         </div>
       )}
-      <Footer
-        onOpenRules={() => setIsRulesModalOpen(true)}
-        revenue={totalVolume}
-        productsAdded={listings.length}
-      />
 
-      {/* Outbid / Claim Modal */}
+      <Footer onOpenRules={() => setIsRulesModalOpen(true)} revenue={totalVolume} productsAdded={listings.length} />
+
       <OutbidModal
         isOpen={isSubmitModalOpen}
         onClose={() => setIsSubmitModalOpen(false)}
@@ -327,11 +206,7 @@ export default function App() {
         initialBid={quickClaimBid}
       />
 
-      {/* Rules Modal */}
-      <RulesModal
-        isOpen={isRulesModalOpen}
-        onClose={() => setIsRulesModalOpen(false)}
-      />
+      <RulesModal isOpen={isRulesModalOpen} onClose={() => setIsRulesModalOpen(false)} />
     </div>
   );
 }
